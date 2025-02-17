@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fortune Report</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Quicksand:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --color-primary: #6b9080;
+            --color-secondary: #a4c3b2;
+            --color-accent: #cce3de;
+            --color-background: #eaf4f4;
+            --color-text: #6b9080;
+            --page-margin: 20mm;
+            --a4-width: 210mm;
+            --a4-height: 297mm;
+            --content-width: calc(var(--a4-width) - (var(--page-margin) * 2));
+            --content-height: calc(var(--a4-height) - (var(--page-margin) * 2));
+        }
+
+        @page {
+            margin: 0;
+            size: A4;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            counter-reset: page;
+            font-family: 'Quicksand', sans-serif;
+            background: var(--color-background);
+            color: var(--color-text);
+            font-size: 12pt;
+            line-height: 1.6;
+        }
+
+        .page-header {
+            position: absolute;
+            top: 10mm;
+            left: 20mm;
+            right: 20mm;
+            text-align: center;
+        }
+
+        .page-footer {
+            position: absolute;
+            bottom: var(--page-margin);
+            left: var(--page-margin);
+            right: var(--page-margin);
+            height: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--color-primary);
+
+
+            position: absolute;
+            bottom: 10mm;
+            left: 20mm;
+            right: 20mm;
+            text-align: center;
+            padding-top: 1rem;
+            border-top: 1px solid var(--color-accent);
+            color: var(--color-primary);
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .content-area {
+            margin-top: 60px;
+            margin-bottom: 60px;
+            height: calc(100% - 120px);
+            overflow: hidden;
+        }
+
+
+        .page-number:after {
+            content: counter(page);
+            counter-increment: page;
+        }
+
+        .content-section {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
+        .page {
+            position: relative;
+            width: var(--a4-width);
+            height: var(--a4-height);
+            padding: var(--page-margin);
+            page-break-after: always;
+            overflow: hidden;
+        }
+
+        .front-page {
+            background: linear-gradient(135deg, var(--color-primary));
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            text-align: center;
+        }
+
+        .decorative-border {
+            position: absolute;
+            top: var(--page-margin);
+            left: var(--page-margin);
+            right: var(--page-margin);
+            bottom: var(--page-margin);
+            border: 2px solid var(--color-accent);
+            pointer-events: none;
+        }
+
+        .company-header {
+            margin-top: 3rem;
+            padding: 2rem;
+            width: 100%;
+        }
+
+        .company-title {
+            font-family: 'Cinzel', serif;
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--color-primary);
+            margin-bottom: 1rem;
+            letter-spacing: 2px;
+        }
+
+        .company-subtitle {
+            font-size: 1.2rem;
+            color: var(--color-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .divine-symbol {
+            margin: 2rem 0;
+            font-size: 3rem;
+            color: var(--color-primary);
+            position: relative;
+        }
+
+        .divine-symbol::before,
+        .divine-symbol::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 100px;
+            height: 1px;
+            background: var(--color-accent);
+        }
+
+        .divine-symbol::before {
+            right: calc(100% + 1rem);
+        }
+
+        .divine-symbol::after {
+            left: calc(100% + 1rem);
+        }
+
+        .report-details {
+            margin: 2rem 0;
+            padding: 1.3rem;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 1rem;
+            border: 1px solid var(--color-accent);
+        }
+
+        .report-title {
+            font-family: 'Cinzel', serif;
+            font-size: 2rem;
+            color: var(--color-primary);
+            margin-bottom: 1rem;
+        }
+
+        .astrologer-info {
+            margin-top: 1.5rem;
+            font-style: italic;
+            color: var(--color-secondary);
+        }
+
+        .content-wrapper {
+            position: relative;
+            background: #fff;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(107, 144, 128, 0.1);
+            margin: 1rem 0;
+            border: 1px solid var(--color-accent);
+        }
+
+        .last-page {
+            background: linear-gradient(135deg, var(--color-background), #fff);
+            text-align: center;
+        }
+
+        .social-media-section {
+            margin: 4rem auto;
+            padding: 2rem;
+            max-width: 80%;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 1rem;
+            border: 1px solid var(--color-accent);
+            box-shadow: 0 4px 6px rgba(107, 144, 128, 0.1);
+        }
+
+        .social-links {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            margin: 2rem 0;
+            padding: 1rem;
+        }
+
+        .social-link {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            background: #fff;
+            border: 1px solid var(--color-accent);
+            border-radius: 0.5rem;
+            color: var(--color-primary);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .social-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(107, 144, 128, 0.1);
+        }
+
+        .social-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 1rem;
+        }
+
+        .contact-info {
+            margin-top: 3rem;
+            padding: 1rem;
+            border-top: 1px solid var(--color-accent);
+        }
+
+        .kundali-info {
+            margin: 2rem auto;
+            max-width: 500px;
+        }
+
+        .kundali-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 1rem 0;
+        }
+
+        .kundali-table tr td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--color-accent);
+        }
+
+        .kundali-table tr td:first-child {
+            font-weight: 600;
+            color: var(--color-primary);
+            width: 40%;
+        }
+
+        .kundali-table tr td:last-child {
+            color: var(--color-text);
+        }
+
+        .section-title {
+            text-align: center;
+            color: var(--color-primary);
+            font-family: 'Cinzel', serif;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--color-accent);
+        }
+
+        /* North Indian Chart Styles */
+        .north-indian-chart {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 20px auto;
+            /* border: 1px solid black; */
+        }
+        
+        .chart-house {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            white-space: pre-line;
+            font-size: 10px;
+        }
+
+        .ascendant {
+            font-weight: bold;
+            color: #ff0000;
+            position: relative;
+            top: 48px;
+            
+        }
+
+        .chart-container {
+            width: 100%;
+            max-width: 500px;
+            margin: 20px auto;
+        }
+        .chart-image {
+            width: 100%;
+            height: auto;
+        }
+
+        /* Add styles for chart numbers and signs */
+        .house-number {
+            margin-top: -45px;
+            
+           /* Reduce space between number and sign */
+        }
+        /* .planet-sign { */
+            /* margin-top: -35px;    Adjust space above the sign */
+            /* line-height: 1.2;   Reduce line height to bring elements closer */
+        /* } */
+        .planet-sign {
+            position: relative;
+             /* Adjust this value to move planet signs up/down independently */
+             margin-top: -35px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Front Page -->
+    <div class="page front-page">
+        <div class="decorative-border"></div>
+
+        <div class="company-header">
+            <h1 class="company-title">{{fortune_report.company_details.name}}</h1>
+            <p class="company-subtitle">{{fortune_report.company_details.slogan}}</p>
+            <p class="text-sm text-gray-600">Est. {{fortune_report.company_details.year}}</p>
+        </div>
+
+        <div class="divine-symbol">
+            <div>ॐ</div>
+            <p class="text-xl mt-4">गं गणपतये नमः</p>
+            <p class="text-base text-gray-600">Om Gam Ganapataye Namaha</p>
+        </div>
+
+        <div class="report-details">
+            <h2 class="report-title">{{fortune_report.company_details.report_name}}</h2>
+            <div class="astrologer-info">
+                <p class="text-lg mb-2">Crafted with Divine Wisdom by</p>
+                <p class="text-xl font-semibold">{{fortune_report.company_details.astrologer_name}}</p>
+            </div>
+        </div>
+
+        <div class="page-footer">
+            <div class="company-info">{{fortune_report.company_details.name}}</div>
+            <div class="page-number"></div>
+        </div>
+    </div>
+
+    <!-- Second Page - About -->
+    <div class="page content-page">
+        <div class="page-header">
+            <h3 class="text-lg font-semibold">{{fortune_report.company_details.name}}</h3>
+        </div>
+
+        <div class="mt-16 max-w-3xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8 ">About the Report</h2>
+            <div class="text-gray-700 text-lg text-justify">
+                <!-- {{company_details.about_report}} -->
+                Our comprehensive report offers a deep understanding of the celestial influences shaping your personal,
+                professional, and spiritual life. By analyzing your birth chart (Kundli), we provide insights into how
+                planetary positions affect key aspects such as career, wealth, relationships, and health. With precise
+                astrological calculations, we offer guidance that helps you navigate life’s transitions and make
+                informed decisions.
+
+                Unlike generic astrology readings, our report is tailored to your unique cosmic blueprint. We focus on
+                accuracy and specificity, steering clear of vague generalizations. The report delves into your life’s
+                trajectory, highlighting key periods of growth, challenges, and opportunities. It includes monthly
+                predictions and essential focus areas, helping you stay ahead of significant shifts and take proactive
+                steps to align with cosmic energy for your benefit.
+
+                This is more than just a forecast—it’s a tool for self-awareness and empowerment. By understanding the
+                celestial forces at play, you can align with the natural flow of the universe. Our approach is rooted in
+                precision and clarity, providing practical and transformative insights. Whether you seek guidance in
+                career choices, financial planning, relationships, or overall well-being, our report delivers actionable
+                wisdom to guide you.
+
+                We believe astrology is not about fate but understanding the cosmic rhythms influencing your life.
+                Through this awareness, you gain the confidence to make conscious decisions, break free from
+                limitations, and embrace life with purpose and serenity.
+
+                Our mission is to help you unlock the profound wisdom hidden in your stars. By integrating these
+                insights into your daily life, you can cultivate a deeper connection with yourself and the universe. Let
+                this report be your celestial roadmap, guiding you toward a future of clarity, confidence, and
+                fulfillment.
+            </div>
+        </div>
+
+        <div class="page-footer">
+            <p>{{fortune_report.company_details.report_name}}</p>
+        </div>
+    </div>
+
+    <!-- Kundali Information Page -->
+    <div class="page content-page">
+        <div class="page-header">
+            <h3 class="text-lg font-semibold">{{fortune_report.company_details.name}}</h3>
+        </div>
+
+        <div class="kundali-info">
+            <h2 class="section-title">Basic Kundali Information</h2>
+            <table class="kundali-table">
+                <tr>
+                    <td>Name</td>
+                    <td>{{user_details.name}}</td>
+                </tr>
+                <tr>
+                    <td>Birth Date</td>
+                    <!-- <td>{{user_details.dob}}</td> -->
+                    <td>06-03-1990</td>
+                </tr>
+                <tr>
+                    <td>Birth Time</td>
+                    <td>{{user_details.time_of_birth}} (Standard Time UTC+5:30)</td>
+                </tr>
+                <tr>
+                    <td>Birth Place</td>
+                    <!-- <td>{{#if user_details.place_of_birth}}{{user_details.place_of_birth}}{{else}}Not Provided{{/if}}</td> -->
+                    <td>Kota, Rajasthan</td>
+                </tr>
+                <tr>
+                    <td>Latitude</td>
+                    <!-- <td>{{#if user_details.latitude}}{{user_details.latitude}}{{else}}Not Provided{{/if}}</td> -->
+                    <td>25.1768708°N</td>
+                </tr>
+                <tr>
+                    <td>Longitude</td>
+                    <!-- <td>{{#if user_details.longitude}}{{user_details.longitude}}{{else}}Not Provided{{/if}}</td> -->
+                    <td>75.8417637°E</td>
+                </tr>
+                <!-- <tr>
+                    <td>Time Zone</td> -->
+                    <!-- <td>{{#if user_details.timezone}}{{user_details.timezone}}{{else}}Not Provided{{/if}}</td> -->
+                    <!-- <td>Asia/Kolkata</td>
+                </tr> -->
+                <tr>
+                    <td>Sunrise</td>
+                    <!-- <td>{{#if user_details.sunrise_time}}{{user_details.sunrise_time}}{{else}}Not Available{{/if}}</td> -->
+                    <td> 6:45 AM</td>
+                </tr>
+                <tr>
+                    <td>Sunset</td>
+                    <!-- <td>{{#if user_details.sunset_time}}{{user_details.sunset_time}}{{else}}Not Available{{/if}}</td> -->
+                    <td>6:30 PM</td>
+                </tr>
+                <tr>
+                    <td>Ayanamsa</td>
+                    <td>{{user_details.ayanamsa}}</td>
+                </tr>
+            </table>
+
+        </div>
+
+        <!-- North Indian Chart -->
+        <div class="content-section">
+            <h2 class="section-title">Birth Chart (North Indian Style)</h2>
+            <div id="northIndianChart" class="north-indian-chart"></div>
+        </div>
+<!-- 
+        <div class="chart-container">
+            <img class="chart-image" src="{{kundliChartBase64}}" alt="North Indian Kundli Chart">
+        </div> -->
+
+        <div class="page-footer">
+            <p>{{fortune_report.company_details.report_name}}</p>
+        </div>
+    </div>
+
+    <!-- Lucky 13 Information Page -->
+    <div class="page content-page">
+        <div class="page-header">
+            <h3 class="text-lg font-semibold">{{fortune_report.company_details.name}}</h3>
+        </div>
+
+        <div class="content-area">
+            <div class="content-section">
+                <h2 class="text-3xl font-bold mb-8">Lucky 13 Information</h2>
+
+                <div class="grid grid-cols-1 gap-6">
+                    <div class="lucky-info-section">
+                        <div class="mb-6">
+                            <h4 class="text-xl font-semibold mb-3">Colors & Numbers</h4>
+                            <ul class="list-none space-y-2">
+                                <li>• <strong>Lucky Colors:</strong> {{#each lucky_13.colour}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</li>
+                                <li>• <strong>Lucky Number:</strong> {{lucky_13.number}}</li>
+                            </ul>
+                        </div>
+
+                        <div class="mb-6">
+                            <h4 class="text-xl font-semibold mb-3">Time Periods</h4>
+                            <ul class="list-none space-y-2">
+                                <li>• <strong>Lucky Day:</strong> {{lucky_13.day}}</li>
+                                <li>• <strong>Lucky Months:</strong> {{#each lucky_13.month}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</li>
+                            </ul>
+                        </div>
+
+                        <div class="mb-6">
+                            <h4 class="text-xl font-semibold mb-3">Career & Finance</h4>
+                            <ul class="list-none space-y-2">
+                                <li>• <strong>Career Paths:</strong> {{#each lucky_13.career}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</li>
+                                <li>• <strong>Lucky Car Brands:</strong> {{lucky_13.car_brand}}</li>
+                                <li>• <strong>Lucky Banks:</strong> {{lucky_13.bank}}</li>
+                            </ul>
+                        </div>
+
+                        <div class="mb-6">
+                            <h4 class="text-xl font-semibold mb-3">Precious Items</h4>
+                            <ul class="list-none space-y-2">
+                                <li>• <strong>Lucky Metals:</strong> {{#each lucky_13.jewellery_metal}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</li>
+                                <li>• <strong>Lucky Gemstones:</strong> {{#each lucky_13.gemstones}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</li>
+                            </ul>
+                        </div>
+
+                        <div class="mb-6">
+                            <h4 class="text-xl font-semibold mb-3">Lifestyle</h4>
+                            <ul class="list-none space-y-2">
+                                <li>• <strong>Lucky Food:</strong> {{#each lucky_13.food}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</li>
+                                <li>• <strong>Lucky Symbols:</strong> {{#each lucky_13.symbols}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</li>
+                                <li>• <strong>Lucky Animals:</strong> {{#each lucky_13.animal}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</li>
+                                <li>• <strong>Recommended Exercises:</strong> {{#each lucky_13.exercise_type}}{{this}}{{#unless @last}}, {{/unless}}{{/each}}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="page-footer">
+            <div class="company-info text-sm">
+                <span>{{fortune_report.company_details.email}}</span>
+            </div>
+            <div class="page-number text-sm">Page </div>
+        </div>
+    </div>
+
+    <!-- Third Page - Kundali Highlights -->
+    <div class="page content-page">
+        <div class="page-header">
+            <h3 class="text-lg font-semibold">{{fortune_report.company_details.name}}</h3>
+        </div>
+        <div class="content-section">
+            <div class="content-area">
+                    <h2 class="text-3xl font-bold mb-8">Fortune Report -
+                        {{fortune_report.monthly_predictions.[0].month}}
+                        {{monthly_predictions.[0].year}}</h2>
+
+                    <div class="mb-8">
+                        <h3 class="text-2xl font-semibold mb-4">Monthly Highlights</h3>
+                        <p class="text-justify">
+                            {{#each fortune_report.monthly_predictions.[0].highlights}}
+                            {{this}}
+                            {{/each}}
+                        </p>
+                    </div>
+
+                    <div class="mb-8">
+                        <h3 class="text-2xl font-semibold mb-4">Focus Areas</h3>
+
+                        <div class="space-y-4">
+                            <div>
+                                <h4 class="text-xl font-semibold">Love & Relationships</h4>
+                                <p class="text-justify">
+                                    {{fortune_report.monthly_predictions.[0].focus_areas.love_relationships}}</p>
+                            </div>
+                            <div>
+                                <h4 class="text-xl font-semibold">Career & Finances</h4>
+                                <p class="text-justify">
+                                    {{fortune_report.monthly_predictions.[0].focus_areas.career_finances}}
+                                </p>
+                            </div>
+                            <div>
+                                <h4 class="text-xl font-semibold">Health & Wellness</h4>
+                                <p class="text-justify">
+                                    {{fortune_report.monthly_predictions.[0].focus_areas.health_wellness}}
+                                </p>
+                            </div>
+                            <div class="content-section">
+                                <h4 class="text-xl font-semibold">Lucky Symbols</h4>
+                                <ul class="list-none space-y-2">
+                                    <li>• <strong>Lucky Numbers:</strong>
+                                        {{#each fortune_report.monthly_predictions.[0].focus_areas.lucky_numbers}}
+                                        {{#if @last}}{{this}}{{else}}{{this}}, {{/if}}
+                                        {{/each}}
+                                    </li>
+                                    <li>• Lucky Colors and Symbols: {{#each fortune_report.monthly_predictions.[0].focus_areas.lucky_colors}}
+                                        {{this}}{{/each}} and {{#each fortune_report.monthly_predictions.[0].focus_areas.lucky_symbols}}
+                                        {{this}}{{/each}}</li>
+                                </ul>
+                            </div>
+                            <div class="content-section">
+                                <h4 class="text-xl font-semibold">Remedies</h4>
+                                <div class="text-justify space-y-2">
+                                    {{#if fortune_report.monthly_predictions.[0].focus_areas.remedies}}
+                                    {{#each fortune_report.monthly_predictions.[0].focus_areas.remedies}}
+                                    <p>• {{this}}</p>
+                                    {{/each}}
+                                    {{else}}
+                                    <p>No specific remedies recommended for this month.</p>
+                                    {{/if}}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+               
+            </div>
+        </div>
+
+        <div class="page-footer">
+            <p>{{fortune_report.company_details.report_name}}</p>
+        </div>
+    </div>
+
+    
+
+   
+
+    <!-- Last Page -->
+    <div class="page last-page">
+        <div class="decorative-border"></div>
+
+        <div class="company-header">
+            <h1 class="company-title">{{fortune_report.company_details.name}}</h1>
+            <p class="company-subtitle">{{fortune_report.company_details.slogan}}</p>
+        </div>
+
+        <div class="social-media-section">
+            <h2 class="text-2xl font-bold mb-6" style="color: var(--color-primary);">Connect With Us</h2>
+
+            <div class="social-links">
+                {{#if fortune_report.company_details.social_media.facebook.url}}
+                <a href="{{fortune_report.company_details.social_media.facebook}}" class="social-link">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236b9080'%3E%3Cpath d='M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z'/%3E%3C/svg%3E"
+                        alt="Facebook" class="social-icon">
+                    <span>Facebook</span>
+                </a>
+                {{/if}}
+
+                {{#if fortune_report.company_details.social_media.twitter.url}}
+                <a href="{{company_details.social_media.twitter}}" class="social-link">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236b9080'%3E%3Cpath d='M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z'/%3E%3C/svg%3E"
+                        alt="Twitter" class="social-icon">
+                    <span>Twitter</span>
+                </a>
+                {{/if}}
+
+                {{#if fortune_report.company_details.social_media.instagram.url}}
+                <a href="{{fortune_report.company_details.social_media.instagram}}" class="social-link">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236b9080'%3E%3Cpath d='M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.073 4.948.073 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z'/%3E%3C/svg%3E"
+                        alt="Instagram" class="social-icon">
+                    <span>Instagram</span>
+                </a>
+                {{/if}}
+
+                {{#if fortune_report.company_details.social_media.linkedin.url}}
+                <a href="{{fortune_report.company_details.social_media.linkedin}}" class="social-link">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236b9080'%3E%3Cpath d='M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z'/%3E%3C/svg%3E"
+                        alt="LinkedIn" class="social-icon">
+                    <span>LinkedIn</span>
+                </a>
+                {{/if}}
+            </div>
+
+            <div class="contact-info">
+                <h3 class="text-xl mb-3" style="color: var(--color-primary);">Get in Touch</h3>
+                <p class="text-lg">{{fortune_report.company_details.email}}</p>
+            </div>
+        </div>
+
+        <div class="page-footer">
+            <p>{{fortune_report.company_details.report_name}}</p>
+            <div class="page-number"></div>
+        </div>
+        <!-- <div class="page-footer">
+            <div class="company-info">{{fortune_report.company_details.name}}</div>
+            <div class="page-number"></div>
+        </div> -->
+        <!-- <div class="page-footer">
+            <div class="company-info">{{fortune_report.company_details.name}}</div>
+            <div class="page-number"></div>
+        </div> -->
+    </div>
+    <script>
+        function createStars() {
+            const starsContainer = document.createElement('div');
+            starsContainer.id = 'stars';
+            starsContainer.style.position = 'fixed';
+            starsContainer.style.top = '0';
+            starsContainer.style.left = '0';
+            starsContainer.style.width = '100%';
+            starsContainer.style.height = '100%';
+            starsContainer.style.zIndex = '0';
+            document.body.appendChild(starsContainer);
+
+            // Create more stars for a denser effect
+            for (let i = 0; i < 200; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = `${Math.random() * 100}%`;
+                star.style.top = `${Math.random() * 100}%`;
+                star.style.animationDelay = `${Math.random() * 1.5}s`;
+                // Vary star sizes
+                star.style.transform = `scale(${Math.random() * 0.8 + 0.2})`;
+                // Add different animation durations
+                star.style.animationDuration = `${1 + Math.random()}s`;
+                starsContainer.appendChild(star);
+            }
+        }
+
+        // Create subtle floating effect for content
+        function addFloatingEffect() {
+            const contentWrappers = document.querySelectorAll('.content-wrapper');
+            contentWrappers.forEach(wrapper => {
+                wrapper.style.animation = 'float 6s ease-in-out infinite';
+            });
+        }
+
+        // Add smooth scroll behavior
+        function addSmoothScroll() {
+            document.documentElement.style.scrollBehavior = 'smooth';
+        }
+
+        // Function to get planet abbreviation
+        function getAbbreviation(name) {
+            const abbreviations = {
+                Sun: "Su", Moon: "Mo", Mars: "Ma", Mercury: "Me",
+                Jupiter: "Ju", Venus: "Ve", Saturn: "Sa", Rahu: "Ra", Ketu: "Ke"
+            };
+            return abbreviations[name] || name;
+        }
+
+        // Function to capitalize first letter
+        function capitalize(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+        }
+
+        // Function to get planets in a specific house
+        function getPlanetsInHouse(data, houseNum) {
+            const planets = [];
+            Object.entries(data.kundli).forEach(([planet, info]) => {
+                if (planet !== 'Ascendant' && info.house === houseNum) {
+                    planets.push(getAbbreviation(planet));
+                }
+            });
+            return planets.join('\n');
+        }
+
+        // Function to render North Indian Chart
+        function renderNorthIndianChart(data) {
+            const chartContainer = document.getElementById('northIndianChart');
+            if (!chartContainer || !data.kundli) return;
+            
+            // Clear previous content
+            chartContainer.innerHTML = '';
+            
+            // Add SVG for chart lines
+            chartContainer.innerHTML = `
+              <svg viewBox="0 0 100 100" style="position: absolute; width: 100%; height: 100%;">
+                <rect x="0" y="0" width="100" height="100" fill="none" stroke="#A8CABA" stroke-width="1.2" />
+                <path d="M 50 0 L 100 50 L 50 100 L 0 50 Z" fill="none" stroke="#A8CABA" stroke-width="1" />
+                <line x1="0" y1="0" x2="100" y2="100" stroke="#BFD8D5" stroke-width="0.8" />
+                <line x1="100" y1="0" x2="0" y2="100" stroke="#BFD8D5" stroke-width="0.8" />
+              </svg>
+            `;
+
+            const zodiacSignsArray = [
+                "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
+                "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces"
+            ];
+
+            const getZodiacNumber = (sign) => zodiacSignsArray.indexOf(capitalize(sign)) + 1;
+            const ascendantNumber = getZodiacNumber(data.kundli.Ascendant.rashi);
+            
+            // Generate house sequence starting from the ascendant
+            const houseOrder = Array.from({ length: 12 }, (_, i) => ((ascendantNumber + i - 1) % 12) + 1);
+
+            const positions = [
+                { top: "25%", left: "50%" }, { top: "16%", left: "25%" }, { top: "34%", left: "6%" },
+                { top: "43%", left: "25%" }, { top: "75%", left: "5%" }, { top: "92%", left: "25%" },
+                { top: "70%", left: "50%" }, { top: "92%", left: "75%" }, { top: "72%", left: "95%" },
+                { top: "40%", left: "75%" }, { top: "24%", left: "95%" }, { top: "18%", left: "75%" }
+            ];
+
+            houseOrder.forEach((houseNum, i) => {
+                const position = positions[i];
+                const isAscendant = data.kundli.Ascendant.house === houseNum;
+                const planets = getPlanetsInHouse(data, houseNum);
+
+                const houseDiv = document.createElement('div');
+                houseDiv.className = 'chart-house';
+                houseDiv.style.top = position.top;
+                houseDiv.style.left = position.left;
+                
+                houseDiv.innerHTML = `
+                    <div class="house-number">${houseNum}</div>
+                    ${isAscendant ? '<div class="ascendant">As</div>' : ''}
+                    <div class="planet-sign mt-1">${planets}</div>
+                `;
+
+                chartContainer.appendChild(houseDiv);
+            });
+        }
+
+        // Function to fetch kundli data and render chart
+        async function fetchAndRenderKundliChart() {
+            try {
+                const response = await fetch('http://192.168.29.187:5000/generate_kundli', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        date_of_birth: "1990-03-06",
+                        time_of_birth: "01:00",
+                        latitude: 25.17,
+                        longitude: 75.84
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch kundli data');
+                }
+
+                const data = await response.json();
+                if (data.success === false) {
+                    throw new Error(data.error || 'Failed to generate kundli');
+                }
+                renderNorthIndianChart(data);
+            } catch (error) {
+                console.error('Error fetching kundli data:', error);
+                document.getElementById('northIndianChart').innerHTML = 'Failed to load chart';
+            }
+        }
+
+        // Initialize all effects when document loads
+        document.addEventListener('DOMContentLoaded', () => {
+            createStars();
+            addFloatingEffect();
+            addSmoothScroll();
+            fetchAndRenderKundliChart();
+        });
+
+        // Add floating animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes float {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-10px); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+
+</html>

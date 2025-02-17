@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fortune Report</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <style>
+        @page {
+            margin: 0;
+            size: A4;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            /* background: #fff; */
+            counter-reset: page;
+        }
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20mm;
+            margin: 0;
+            break-after: page;
+            position: relative;
+        }
+        .page:not(.front-page):not(.last-page)::after {
+            counter-increment: page;
+            content: counter(page);
+            position: absolute;
+            bottom: 10mm;
+            right: 20mm;
+        }
+        .page-header {
+            position: absolute;
+            top: 10mm;
+            left: 20mm;
+            right: 20mm;
+            text-align: center;
+        }
+        .page-footer {
+            position: absolute;
+            bottom: 10mm;
+            left: 20mm;
+            right: 20mm;
+            text-align: center;
+        }
+        .cosmic-bg {
+            background: linear-gradient(to right, #0f172a, #1e293b);
+        }
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 1.5s infinite;
+        }
+        .front-page {
+            /* background: #0f172a; */
+            color: #ffffff;
+        }
+        .about-page {
+            /* background: #ffffff; */
+            color: #ffffff;
+        }
+      
+        .last-page {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: #fff;
+        }
+        .content-page {
+            /* background: #ffffff; */
+            color: #ffffff;
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s ease;
+            break-inside: avoid;
+            page-break-inside: avoid;
+            margin-bottom: 20px;
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .section-title {
+            background: linear-gradient(45deg, #c084fc, #818cf8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: bold;
+            font-size: 1.5rem;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        .section-title-container {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+    </style>
+</head>
+<body class="cosmic-bg">
+    <!-- Front Page -->
+    <div class="page front-page">
+        <div class="flex flex-col justify-between min-h-full py-16">
+            <div class="text-center">
+                <h1 class="text-4xl font-bold mb-4">{{company_details.name}}</h1>
+                <p class="text-xl text-gray-300 mb-3">{{company_details.slogan}}</p>
+                <p class="text-lg text-gray-400">Est. {{company_details.year}}</p>
+            </div>
+
+            <div class="text-center">
+                <p class="text-2xl mb-2">ॐ गं गणपतये नमः</p>
+                <p class="text-lg text-gray-300">Om Gam Ganapataye Namaha</p>
+            </div>
+
+            <div class="text-center">
+                <h2 class="text-3xl font-bold mb-6">{{company_details.report_name}}</h2>
+                <p class="text-xl text-gray-300">Prepared by</p>
+                <p class="text-2xl font-semibold mt-2">{{company_details.astrologer_name}}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Second Page - About -->
+    <div class="page content-page">
+        <div class="page-header">
+            <h3 class="text-lg font-semibold">{{company_details.name}}</h3>
+        </div>
+        
+        <div class="mt-16 max-w-3xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8 about-page">About the Report</h2>
+            <div class="text-gray-700 text-lg text-white">
+                <!-- {{company_details.about_report}} -->
+                Astro Insights is a comprehensive report that offers a profound understanding of
+                the celestial influences that shape your personal, professional, and spiritual
+                selves. Our report is based on the intricate analysis of your birth chart (Kundli)
+                and provides readings of your life's trajectory. It explores how planetary positions
+                influence various domains—career, wealth, relationships, health—at different
+                phases, offering predictions that can serve as a guide for making informed life
+                decisions.
+
+                Our report is designed to provide actionable insights that can help you make the
+                most of your life. We avoid broad-stroke generalizations and focus on the
+                precision of your unique cosmic layout. We highlight monthly predictions and
+                key focus areas to keep you informed about upcoming transitions and
+                opportunities—a proactive approach to astrology.
+
+                Astro Insights is committed to not only revealing what the stars hold for you but
+                also equipping you with the knowledge to make profound and lasting changes.
+                Our dedication is rooted in precise astrological calculations, and we advocate
+                for understanding and embracing the cosmic sequence that governs your life,
+                developing self-awareness through cosmic appreciation. This understanding can
+                liberate you from limitations, bringing serenity and confidence in life choices.
+                
+            </div>
+        </div>
+
+        <div class="page-footer">
+            <p>{{company_details.report_name}}</p>
+        </div>
+    </div>
+
+    <!-- Third Page - Kundali Highlights -->
+    <div class="page content-page">
+        <div class="page-header">
+            <h3 class="text-lg font-semibold">{{company_details.name}}</h3>
+        </div>
+
+        <div class="mt-16">
+            <h2 class="text-3xl font-bold mb-8">Fortune Report - {{fortune_report.monthly_predictions.[0].month}} {{monthly_predictions.[0].year}}</h2>
+            
+            <div class="mb-8">
+                <h3 class="text-2xl font-semibold mb-4">Astrology Highlights</h3>
+                <ul class="highlights-list">
+                    {{#each fortune_report.kundali_highlights}}
+                    <li class="mb-2">{{this}}</li>
+                    {{/each}}
+                </ul>
+            </div>
+
+            <div class="mb-8">
+                <h3 class="text-2xl font-semibold mb-4">Focus Areas</h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="text-xl font-semibold">Love & Relationships</h4>
+                        <p>{{fortune_report.monthly_predictions.[0].focus_areas.love_relationships}}</p>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold">Career & Finances</h4>
+                        <p>{{fortune_report.monthly_predictions.[0].focus_areas.career_finances}}</p>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold">Health & Wellness</h4>
+                        <p>{{fortune_report.monthly_predictions.[0].focus_areas.health_wellness}}</p>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold">Lucky Symbols</h4>
+                        <p>{{fortune_report.monthly_predictions.[0].focus_areas.lucky_symbols}}</p>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold">Remedies</h4>
+                        <p>{{fortune_report.monthly_predictions.[0].focus_areas.remedies}}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="page-footer">
+            <p>{{fortune_report.company_details.report_name}}</p>
+        </div>
+    </div>
+
+    <!-- Dynamic Monthly Pages -->
+    {{#each fortune_report.monthly_predictions}}
+    {{#if @index}}
+    <div class="page content-page">
+        <div class="page-header">
+            <h3 class="text-lg font-semibold">{{../company_details.name}}</h3>
+        </div>
+
+        <div class="mt-16">
+            <h2 class="text-3xl font-bold mb-8">Fortune Report - {{this.month}} {{this.year}}</h2>
+            
+            <div class="mb-8">
+                <h3 class="text-2xl font-semibold mb-4">Monthly Highlights</h3>
+                <ul class="highlights-list">
+                    {{#each this.highlights}}
+                    <li class="mb-2">{{this}}</li>
+                    {{/each}}
+                </ul>
+            </div>
+
+            <div class="mb-8">
+                <h3 class="text-2xl font-semibold mb-4">Focus Areas</h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <h4 class="text-xl font-semibold">Love & Relationships</h4>
+                        <p>{{this.focus_areas.love_relationships}}</p>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold">Career & Finances</h4>
+                        <p>{{this.focus_areas.career_finances}}</p>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold">Health & Wellness</h4>
+                        <p>{{this.focus_areas.health_wellness}}</p>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold">Lucky Symbols</h4>
+                        <p>{{this.focus_areas.lucky_symbols}}</p>
+                    </div>
+                    <div>
+                        <h4 class="text-xl font-semibold">Remedies</h4>
+                        <p>{{this.focus_areas.remedies}}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="page-footer">
+            <p>{{../company_details.report_name}}</p>
+        </div>
+    </div>
+    {{/if}}
+    {{/each}}
+
+    <!-- Last Page -->
+    <div class="page last-page">
+        <div class="flex flex-col justify-center items-center min-h-full text-center">
+            <div>
+                <h2 class="text-4xl font-bold mb-4">{{company_details.name}}</h2>
+                <p class="text-xl text-gray-300 mb-8">{{company_details.slogan}}</p>
+            </div>
+
+            <div class="social-links">
+                {{#if company_details.social_media.facebook}}
+                <a href="{{company_details.social_media.facebook}}" class="text-white hover:text-gray-300">Facebook</a>
+                {{/if}}
+                {{#if company_details.social_media.twitter}}
+                <a href="{{company_details.social_media.twitter}}" class="text-white hover:text-gray-300">Twitter</a>
+                {{/if}}
+                {{#if company_details.social_media.instagram}}
+                <a href="{{company_details.social_media.instagram}}" class="text-white hover:text-gray-300">Instagram</a>
+                {{/if}}
+                {{#if company_details.social_media.linkedin}}
+                <a href="{{company_details.social_media.linkedin}}" class="text-white hover:text-gray-300">LinkedIn</a>
+                {{/if}}
+            </div>
+
+            <div class="mt-8">
+                <p class="text-lg">Contact us at:</p>
+                <p class="text-xl font-semibold">{{company_details.email}}</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Create starry background
+        function createStars() {
+            const starsContainer = document.createElement('div');
+            starsContainer.id = 'stars';
+            starsContainer.style.position = 'fixed';
+            starsContainer.style.top = '0';
+            starsContainer.style.left = '0';
+            starsContainer.style.width = '100%';
+            starsContainer.style.height = '100%';
+            starsContainer.style.zIndex = '-1';
+            document.body.appendChild(starsContainer);
+
+            // Create 100 stars with random positions
+            for (let i = 0; i < 100; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = `${Math.random() * 100}%`;
+                star.style.top = `${Math.random() * 100}%`;
+                // Add random delay to animation
+                star.style.animationDelay = `${Math.random() * 1.5}s`;
+                starsContainer.appendChild(star);
+            }
+        }
+
+        // Call the function when the document is loaded
+        document.addEventListener('DOMContentLoaded', createStars);
+    </script>
+</body>
+</html>

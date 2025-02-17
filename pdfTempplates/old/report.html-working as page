@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Astrological Report</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <style>
+        @page {
+            margin: 0;
+            size: A4;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: #fff;
+        }
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20mm;
+            margin: 0;
+            break-after: page;
+        }
+        .front-page {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            text-align: center;
+        }
+        .company-section {
+            margin-top: 3cm;
+            padding: 20px;
+        }
+        .ganesh-section {
+            margin: 2cm 0;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .report-section {
+            margin-bottom: 3cm;
+            padding: 20px;
+        }
+        .about-page {
+            background: #ffffff;
+            color: #1a1a1a;
+        }
+        .about-content {
+            max-width: 160mm;
+            margin: 0 auto;
+            line-height: 1.8;
+        }
+        .cosmic-bg {
+            background: linear-gradient(to right, #0f172a, #1e293b);
+        }
+        .star {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: white;
+            border-radius: 50%;
+            animation: twinkle 1.5s infinite;
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        .card {
+            background: rgba(19, 15, 15, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s ease;
+            break-inside: avoid;
+            page-break-inside: avoid;
+            margin-bottom: 20px;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .section-title {
+            background: linear-gradient(45deg, #c084fc, #818cf8);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        @media print {
+            .card:first-child {
+                margin-top: 30px;
+            }   
+            .card {
+                margin-top: 20px; /* Extra space in printed version */
+                padding-top: 15px;
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+            .container {
+                width: 100%;
+                max-width: none;
+            }
+            .grid {
+                display: block;
+            }
+            body {
+                background: none;
+                color: #000;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Front Page -->
+    <div class="page front-page">
+        <!-- Company Section -->
+        <div class="company-section">
+            <h1 class="text-4xl font-bold mb-4">{{company_details.name}}</h1>
+            <p class="text-xl text-gray-300 mb-3">{{company_details.slogan}}</p>
+            <p class="text-lg text-gray-400">Est. {{company_details.year}}</p>
+        </div>
+
+        <!-- Ganesh Mantra Section -->
+        <div class="ganesh-section">
+            <img src="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='50' height='50'></svg>" alt="Ganesh Symbol" class="mx-auto mb-4">
+            <p class="text-2xl mb-2">ॐ गं गणपतये नमः</p>
+            <p class="text-lg text-gray-300">Om Gam Ganapataye Namaha</p>
+        </div>
+
+        <!-- Report Section -->
+        <div class="report-section">
+            <h2 class="text-3xl font-bold mb-6">Astrological Report for {{user_details.name}}</h2>
+            <div class="mt-8">
+                <p class="text-xl text-gray-300">Prepared by</p>
+                <p class="text-2xl font-semibold mt-2">{{astrologer_name}}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Second Page - About the Report -->
+    <div class="page about-page">
+        <div class="about-content">
+            <h2 class="text-3xl font-bold mb-8">About the Report</h2>
+            <div class="text-gray-700 text-lg">
+                This report provides an in-depth analysis of your astrological chart, including your personality, strengths, weaknesses, and potential.
+            </div>
+        </div>
+    </div>
+
+    <!-- Rest of the report content -->
+    <div class="page content-page">
+        <!-- User Details Card -->
+        <div class="card rounded-lg p-6 mb-8">
+            <h2 class="text-2xl font-bold mb-4 section-title">Personal Information</h2>
+            <div class="grid md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm text-gray-400">Name</label>
+                    <p class="text-lg">{{user_details.name}}</p>
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400">Date of Birth</label>
+                    <p class="text-lg">{{user_details.dob}}</p>
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400">Time of Birth</label>
+                    <p class="text-lg">{{user_details.time_of_birth}}</p>
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400">Place of Birth</label>
+                    <p class="text-lg">{{user_details.place_of_birth}}</p>
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400">Sun Sign</label>
+                    <p class="text-lg">{{user_details.sun_sign}}</p>
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400">Moon Sign</label>
+                    <p class="text-lg">{{user_details.moon_sign}}</p>
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400">Ascendant</label>
+                    <p class="text-lg">{{user_details.ascendant}}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Personality Analysis -->
+        <div class="card rounded-lg p-6">
+            <h2 class="text-2xl font-bold mb-4 section-title">Personality Analysis</h2>
+            <div class="space-y-4">
+                <div>
+                    <h3 class="text-lg font-semibold text-purple-300">Sun Sign Analysis</h3>
+                    <p class="text-gray-300">{{personality_analysis.sun_sign}}</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-purple-300">Moon Sign Analysis</h3>
+                    <p class="text-gray-300">{{personality_analysis.moon_sign}}</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-purple-300">Ascendant Analysis</h3>
+                    <p class="text-gray-300">{{personality_analysis.ascendant}}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Career and Profession -->
+        <div class="card rounded-lg p-6">
+            <h2 class="text-2xl font-bold mb-4 section-title">Career & Profession</h2>
+            <div class="space-y-4">
+                <div>
+                    <h3 class="text-lg font-semibold text-purple-300">Career Path</h3>
+                    <p class="text-gray-300">{{career_and_profession.career_path}}</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-purple-300">Dasha Analysis</h3>
+                    <p class="text-gray-300">{{career_and_profession.dasha_analysis.current_dasha}}</p>
+                    <p class="text-gray-300 mt-2">{{career_and_profession.dasha_analysis.impact}}</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-purple-300">Planetary Yogas</h3>
+                    <p class="text-gray-300">{{career_and_profession.planetary_yogas}}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Wealth and Finance -->
+        <div class="card rounded-lg p-6">
+            <h2 class="text-2xl font-bold mb-4 section-title">Wealth & Finance</h2>
+            <div class="space-y-4">
+                <div>
+                    <h3 class="text-lg font-semibold text-purple-300">Wealth Potential</h3>
+                    <p class="text-gray-300">{{wealth_and_finance.wealth_potential}}</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-purple-300">Financial Luck</h3>
+                    <p class="text-gray-300">{{wealth_and_finance.financial_luck}}</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-purple-300">Wealth Score</h3>
+                    <div class="w-full bg-gray-700 rounded-full h-4 mt-2">
+                        <div class="bg-purple-500 rounded-full h-4" style="width: {{wealth_and_finance.wealth_score}}0%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Love and Relationships -->
+        <div class="card rounded-lg p-6">
+            <h2 class="text-2xl font-bold mb-4 section-title">Love & Relationships</h2>
+            <div class="space-y-4">
+                <div>
+                    <h3 class="text-lg font-semibold text-purple-300">Compatibility</h3>
+                    <p class="text-gray-300">{{love_and_relationships.compatibility}}</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-purple-300">Marriage Predictions</h3>
+                    <p class="text-gray-300">{{love_and_relationships.marriage_predictions}}</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-purple-300">Venus & Mars Influence</h3>
+                    <p class="text-gray-300">{{love_and_relationships.venus_mars_influence}}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Health and Wellbeing -->
+        <div class="card rounded-lg p-6">
+            <h2 class="text-2xl font-bold mb-4 section-title">Health & Wellbeing</h2>
+            <div class="space-y-4">
+                <div>
+                    <h3 class="text-lg font-semibold text-purple-300">Physical Health</h3>
+                    <p class="text-gray-300">{{health_and_wellbeing.physical_health}}</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-purple-300">Mental Health</h3>
+                    <p class="text-gray-300">{{health_and_wellbeing.mental_health}}</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-purple-300">Favorable Remedies</h3>
+                    <p class="text-gray-300">{{health_and_wellbeing.favorable_remedies}}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Spirituality and Growth -->
+        <div class="card rounded-lg p-6">
+            <h2 class="text-2xl font-bold mb-4 section-title">Spirituality & Growth</h2>
+            <div class="space-y-4">
+                <div>
+                    <h3 class="text-lg font-semibold text-purple-300">Dharma & Life Purpose</h3>
+                    <p class="text-gray-300">{{spirituality_and_growth.dharma_and_life_purpose}}</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-purple-300">Karmic Analysis</h3>
+                    <p class="text-gray-300">{{spirituality_and_growth.karmic_analysis}}</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-purple-300">Guru Influence</h3>
+                    <p class="text-gray-300">{{spirituality_and_growth.guru_influence}}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Family and Domestic Life -->
+        <div class="card rounded-lg p-6">
+            <h2 class="text-2xl font-bold mb-4 section-title">Family & Domestic Life</h2>
+            <div class="space-y-4">
+                <div>
+                    <h3 class="text-lg font-semibold text-purple-300">Parenting Style</h3>
+                    <p class="text-gray-300">{{family_and_domestic_life.parenting_style}}</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-purple-300">Family Relations</h3>
+                    <p class="text-gray-300">{{family_and_domestic_life.family_relations}}</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-purple-300">Siblings</h3>
+                    <p class="text-gray-300">{{family_and_domestic_life.siblings}}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lucky Periods and Forecast -->
+        <div class="card rounded-lg p-6">
+            <h2 class="text-2xl font-bold mb-4 section-title">Lucky Periods & Forecast</h2>
+            <div class="space-y-4">
+                <div>
+                    <h3 class="text-lg font-semibold text-purple-300">Current Dasha</h3>
+                    <p class="text-gray-300">{{lucky_periods_and_forecast.current_dasha}}</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-purple-300">Upcoming Transits</h3>
+                    <p class="text-gray-300">{{lucky_periods_and_forecast.upcoming_transits}}</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-purple-300">Annual Forecast</h3>
+                    <p class="text-gray-300">{{lucky_periods_and_forecast.annual_forecast}}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Energy Balance Insights -->
+        <div class="card rounded-lg p-6">
+            <h2 class="text-2xl font-bold mb-4 section-title">Energy Balance Insights</h2>
+            <div class="space-y-4">
+                <div>
+                    <h3 class="text-lg font-semibold text-purple-300">Elemental Balance</h3>
+                    <p class="text-gray-300">{{energy_balance_insights.elemental_balance}}</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-purple-300">Chakra Analysis</h3>
+                    <p class="text-gray-300">{{energy_balance_insights.chakra_analysis}}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Challenges and Remedies -->
+        <div class="card rounded-lg p-6">
+            <h2 class="text-2xl font-bold mb-4 section-title">Challenges & Remedies</h2>
+            <div class="space-y-4">
+                <div>
+                    <h3 class="text-lg font-semibold text-purple-300">Doshas & Malefic Planets</h3>
+                    <p class="text-gray-300">{{challenges_and_remedies.doshas_and_malefic_planets}}</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold text-purple-300">Remedies</h3>
+                    <p class="text-gray-300">{{challenges_and_remedies.remedies}}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Create starry background
+        function createStars() {
+            const starsContainer = document.createElement('div');
+            starsContainer.id = 'stars';
+            starsContainer.style.position = 'fixed';
+            starsContainer.style.top = '0';
+            starsContainer.style.left = '0';
+            starsContainer.style.width = '100%';
+            starsContainer.style.height = '100%';
+            starsContainer.style.zIndex = '-1';
+            document.body.appendChild(starsContainer);
+
+            // Create 100 stars with random positions
+            for (let i = 0; i < 100; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = `${Math.random() * 100}%`;
+                star.style.top = `${Math.random() * 100}%`;
+                // Add random delay to animation
+                star.style.animationDelay = `${Math.random() * 1.5}s`;
+                starsContainer.appendChild(star);
+            }
+        }
+
+        // Call the function when the document is loaded
+        document.addEventListener('DOMContentLoaded', createStars);
+    </script>
+</body>
+</html>
