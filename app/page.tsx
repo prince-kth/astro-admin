@@ -75,20 +75,4 @@ export default function DashboardPage() {
   )
 }
 
-// export async function generateMetadata() {
-//   return {
-//     title: 'Redirecting...',
-//   }
-// }
 
-// export default async function Home() {
-//   const redirectUrl = '/dashboard'
-//   return (
-//     <>
-//       <meta httpEquiv="refresh" content={`0;url=${redirectUrl}`} />
-//       <script>
-//         {`window.location.href = '${redirectUrl}'`}
-//       </script>
-//     </>
-//   )
-// }

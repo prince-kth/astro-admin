@@ -5,9 +5,13 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useState, useCallback, useEffect } from "react"
 import { User, Building2, FileText, Loader2 } from "lucide-react"
 import { Toaster, toast } from 'sonner'
+import { z } from "zod"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
 
 // Debounce utility function
 function debounce<T extends (...args: any[]) => any>(
@@ -28,40 +32,215 @@ interface LocationSuggestion {
   lon: string;
 }
 
+const REPORT_TYPES = [
+  "Chakra Healing Report",
+  "Fortune Report",
+  "Lucky 13 Reports",
+  "Vedic 4 Report",
+  "Wealth Comprehensive Report",
+  "Wealth Report",
+  "Yogas & Doshas"
+] as const;
+
+// Zod validation schema
+const kundliFormSchema = z.object({
+  reportType: z.enum(REPORT_TYPES),
+  phoneNumber: z.string()
+    .min(10, "Phone number must be at least 10 digits")
+    .max(15, "Phone number must not exceed 15 digits")
+    .regex(/^\+?\d+$/, "Invalid phone number format"),
+  firstName: z.string().min(2, "First name must be at least 2 characters"),
+  lastName: z.string().min(2, "Last name must be at least 2 characters"),
+  email: z.string().email("Invalid email address"),
+  dateOfBirth: z.string().min(1, "Date of birth is required"),
+  timeOfBirth: z.string().min(1, "Time of birth is required"),
+  birthPlace: z.string().min(1, "Birth place is required"),
+  latitude: z.string(),
+  longitude: z.string(),
+  companyName: z.string().optional(),
+  companySlogan: z.string().optional(),
+  companyYear: z.string().optional().refine((year) => {
+    if (!year) return true;
+    const num = parseInt(year);
+    return !isNaN(num) && num > 1800 && num <= new Date().getFullYear();
+  }, "Please enter a valid establishment year"),
+  reportName: z.string().optional(),
+  astrologerName: z.string().optional(),
+  aboutReport: z.string().optional(),
+});
+
+type KundliFormValues = z.infer<typeof kundliFormSchema>;
+
 export default function Home() {
- 
+  const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
+  const [locationError, setLocationError] = useState('');
   const [kundliData, setKundliData] = useState<any | null>(null);
   const [loadingState, setLoadingState] = useState({
     isLoading: false,
     step: 0,
-    message: ''
-  });
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    dateOfBirth: '',
-    timeOfBirth: '',
-    birthPlace: '',
-    latitude: 0,
-    longitude: 0,
-    companyName: '',
-    companySlogan: '',
-    companyYear: '',
-    reportName: '',
-    astrologerName: '',
-    aboutReport: ''
+    message: ""
   });
 
-  const [isLocating, setIsLocating] = useState(false);
-  const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [locationError, setLocationError] = useState<string>('');
+  // Initialize form with empty values for date/time
+  const form = useForm<KundliFormValues>({
+    resolver: zodResolver(kundliFormSchema),
+    defaultValues: {
+      reportType: "Chakra Healing Report",
+      phoneNumber: "",
+      firstName: "",
+      lastName: "",
+      email: "",
+      dateOfBirth: "",
+      timeOfBirth: "",
+      birthPlace: "",
+      latitude: "",
+      longitude: "",
+      companyName: "",
+      companySlogan: "",
+      companyYear: "",
+      reportName: "",
+      astrologerName: "",
+      aboutReport: "",
+    }
+  });
 
-  const [chartBase64, setChartBase64] = useState<string>('');
+  // Set date and time after component mounts
+  useEffect(() => {
+    const currentDate = new Date().toISOString().split('T')[0];
+    const currentTime = new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata', hour12: false, hour: '2-digit', minute: '2-digit' });
+    
+    form.setValue("dateOfBirth", currentDate);
+    form.setValue("timeOfBirth", currentTime);
+  }, []);
 
-  const validateCoordinates = (lat: number, lon: number): boolean => {
-    return lat >= -90 && lat <= 90 && lon >= -180 && lon <= 180;
+  const handleSubmit = async (data: KundliFormValues) => {
+    try {
+      setLoadingState({
+        isLoading: true,
+        step: 0,
+        message: "Validating input data..."
+      });
+
+      // Additional custom validations if needed
+      if (!data.birthPlace || !data.latitude || !data.longitude) {
+        toast.error("Please select a valid birth place with coordinates");
+        return;
+      }
+
+      // API call for kundli generation
+      setLoadingState({
+        isLoading: true,
+        step: 1,
+        message: "Generating kundli..."
+      });
+
+      const kundliResponse = await fetch('http://192.168.29.187:5000/generate_kundli', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          date_of_birth: data.dateOfBirth,
+          time_of_birth: data.timeOfBirth,
+          lat: parseFloat(data.latitude),
+          lon: parseFloat(data.longitude),
+          tz: "Asia/Kolkata", // You might want to make this dynamic
+        }),
+      });
+
+      console.log('Kundli Response Status:', kundliResponse.status);
+      
+      if (!kundliResponse.ok) {
+        const errorData = await kundliResponse.json();
+        console.error('Kundli API Error:', errorData);
+        throw new Error(errorData.message || 'Failed to generate kundli');
+      }
+
+      const kundliResult = await kundliResponse.json();
+      console.log('Kundli Result:', kundliResult);
+      setKundliData(kundliResult);
+
+      // API call for report generation
+      setLoadingState({
+        isLoading: true,
+        step: 2,
+        message: "Generating report..."
+      });
+
+      const reportResponse = await fetch('/api/pdf', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          kundliData: kundliResult,
+          userData: {
+            name: `${data.firstName} ${data.lastName}`,
+            email: data.email,
+            birthDetails: {
+              date: data.dateOfBirth,
+              time: data.timeOfBirth,
+              place: data.birthPlace,
+            },
+            company: {
+              name: data.companyName,
+              slogan: data.companySlogan,
+              year: data.companyYear,
+            },
+            report: {
+              name: data.reportName,
+              astrologer: data.astrologerName,
+              about: data.aboutReport,
+            },
+          },
+        }),
+      });
+
+      if (!reportResponse.ok) {
+        const errorData = await reportResponse.json();
+        throw new Error(errorData.message || 'Failed to generate report');
+      }
+
+      const reportBlob = await reportResponse.blob();
+      const reportUrl = window.URL.createObjectURL(reportBlob);
+      
+      // Success notification and download
+      toast.success('Report generated successfully!', {
+        action: {
+          label: 'Download',
+          onClick: () => {
+            const a = document.createElement('a');
+            a.href = reportUrl;
+            a.download = `${data.firstName}_${data.lastName}_kundli_report.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(reportUrl);
+          },
+        },
+      });
+
+    } catch (error) {
+      console.error('Error generating kundli:', error);
+      toast.error('Failed to generate kundli');
+      setLoadingState({ isLoading: false, step: 0, message: '' });
+    } finally {
+      setLoadingState({
+        isLoading: false,
+        step: 0,
+        message: ""
+      });
+    }
+  };
+
+  // Update the form when location is selected
+  const handleLocationSelect = (location: LocationSuggestion) => {
+    form.setValue('birthPlace', location.display_name);
+    form.setValue('latitude', location.lat);
+    form.setValue('longitude', location.lon);
+    setLocationSuggestions([]);
   };
 
   const searchLocations = async (query: string) => {
@@ -107,7 +286,7 @@ export default function Home() {
 
   const handleLocationSearch = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const query = e.target.value;
-    setFormData(prev => ({ ...prev, birthPlace: query }));
+    form.setValue('birthPlace', query);
 
     if (query.length < 3) {
       setLocationSuggestions([]);
@@ -130,43 +309,6 @@ export default function Home() {
     }
   };
 
-  const handleLocationSelect = (location: LocationSuggestion) => {
-    const lat = parseFloat(location.lat);
-    const lon = parseFloat(location.lon);
-    
-    if (!validateCoordinates(lat, lon)) {
-      setLocationError('Invalid coordinates received');
-      return;
-    }
-
-    setFormData(prev => ({
-      ...prev,
-      birthPlace: location.display_name,
-      latitude: lat,
-      longitude: lon
-    }));
-    setLocationSuggestions([]);
-    setLocationError('');
-  };
-
-  const handleCoordinateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    const numValue = parseFloat(value);
-    
-    if (id === 'latitude' && (numValue < -90 || numValue > 90)) {
-      setLocationError('Latitude must be between -90 and 90 degrees');
-      return;
-    }
-    
-    if (id === 'longitude' && (numValue < -180 || numValue > 180)) {
-      setLocationError('Longitude must be between -180 and 180 degrees');
-      return;
-    }
-    
-    setLocationError('');
-    handleInputChange(e);
-  };
-
   const getCurrentLocation = () => {
     setIsLocating(true);
     setLocationError('');
@@ -186,12 +328,9 @@ export default function Home() {
           );
           const data = await response.json();
 
-          setFormData(prev => ({
-            ...prev,
-            birthPlace: data.display_name,
-            latitude: latitude.toString(),
-            longitude: longitude.toString()
-          }));
+          form.setValue('birthPlace', data.display_name);
+          form.setValue('latitude', latitude.toString());
+          form.setValue('longitude', longitude.toString());
           
           toast.success('Current location detected successfully');
         } catch (error) {
@@ -218,202 +357,6 @@ export default function Home() {
       }
     );
   };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Validate required fields
-    if (!formData.firstName || !formData.lastName || !formData.email) {
-      toast.error('Please fill in all required personal information');
-      return;
-    }
-
-    if (!formData.dateOfBirth || !formData.timeOfBirth) {
-      toast.error('Birth date and time are required');
-      return;
-    }
-
-    if (!formData.birthPlace || !formData.latitude || !formData.longitude) {
-      toast.error('Birth place with coordinates is required');
-      return;
-    }
-
-    setLoadingState({
-      isLoading: true,
-      step: 0,
-      message: "Initializing kundli generation..."
-    });
-
-    try {
-      // Simulate API call with steps
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setLoadingState(prev => ({
-        ...prev,
-        step: 1,
-        message: "Calculating planetary positions..."
-      }));
-
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setLoadingState(prev => ({
-        ...prev,
-        step: 2,
-        message: "Analyzing aspects and conjunctions..."
-      }));
-
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setLoadingState(prev => ({
-        ...prev,
-        step: 3,
-        message: "Generating final report..."
-      }));
-
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Success notification
-      toast.success('Kundli report generated successfully!');
-      
-      setKundliData({
-        // Your kundli data here
-      });
-    } catch (error) {
-      toast.error('Failed to generate kundli report. Please try again.');
-    } finally {
-      setLoadingState({
-        isLoading: false,
-        step: 0,
-        message: ""
-      });
-    }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [id]: value
-    }));
-  };
-
-  const generateKundli = async () => {
-    try {
-      setLoadingState({
-        isLoading: true,
-        step: 0,
-        message: "Initializing kundli generation..."
-      });
-      
-      const response = await fetch('http://192.168.29.187:5000/generate_kundli', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          date_of_birth: formData.dateOfBirth,
-          time_of_birth: formData.timeOfBirth,
-          latitude: formData.latitude,
-          longitude: formData.longitude
-        })
-      });
-
-      const data = await response.json();
-      setKundliData(data);
-      return data;
-    } catch (error) {
-      setLoadingState({ isLoading: false, step: 0, message: '' });
-      console.error('Error generating kundli:', error);
-      throw error;
-    }
-  };
-
-  const generateAstrologyReport = async (kundliData: any) => {
-    try {
-      setLoadingState({
-        isLoading: true,
-        step: 2,
-        message: "Analyzing aspects and conjunctions..."
-      });
-
-      // Log the kundliData to check what we received from generate_kundli
-      console.log('Data received from generate_kundli:', kundliData);
-
-      const requestData = {
-        kundliData: {
-          name: formData.firstName + " " + formData.lastName,
-          dob: formData.dateOfBirth,
-          time_of_birth: formData.timeOfBirth,
-          place_of_birth: formData.birthPlace || "Not specified",
-          sun_sign: kundliData?.sun_sign || "Not specified",
-          moon_sign: kundliData?.moon_sign || "Not specified",
-          ascendant: kundliData?.ascendant || "Not specified",
-          latitude: formData.latitude?.toString() || "Not specified",
-          longitude: formData.longitude?.toString() || "Not specified",
-          timezone: "Asia/Kolkata",
-          sunrise_time: kundliData?.sunrise_time || "Not specified",
-          sunset_time: kundliData?.sunset_time || "Not specified",
-          ayanamsa: "Lahiri",
-          kundli_data: kundliData,
-        }
-      };
-
-      // Log the data we're about to send to the API
-      console.log('Data being sent to /api/openai:', requestData);
-
-      const response = await fetch('/api/openai', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestData)
-      });
-      
-      // Log the response from the API
-      const analysisData = await response.json();
-      console.log('Response received from /api/openai:', analysisData);
-      
-      setLoadingState({
-        isLoading: true,
-        step: 3,
-        message: "Generating final report..."
-      });
-
-      const pdfResponse = await fetch('/api/pdf', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(analysisData)
-      });
-
-      if (!pdfResponse.ok) {
-        throw new Error('Failed to generate PDF');
-      }
-
-      // Create a blob from the PDF data
-      const pdfBlob = await pdfResponse.blob();
-      
-      // Create a download link and trigger it
-      const downloadUrl = window.URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = `${formData.firstName}_${formData.lastName}_report.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(downloadUrl);
-
-      setLoadingState({ isLoading: false, step: 0, message: '' });
-    } catch (error) {
-      setLoadingState({ isLoading: false, step: 0, message: '' });
-      console.error('Error generating report:', error);
-    }
-  };
-
-
-
-  const handleDummySubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    console.log('Form Data:', formData)
-  }
 
   return (
     <div className="flex flex-col bg-gradient-to-b from-background to-muted/50" style={{ height: '70vh', width: '77vw' }}>
@@ -490,8 +433,37 @@ export default function Home() {
               </TabsTrigger>
             </TabsList>
 
-            <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
+            <form onSubmit={form.handleSubmit(handleSubmit)} className="flex-1 flex flex-col min-h-0">
               <TabsContent value="personal" className="flex-1 overflow-auto">
+                <Card className="shadow-sm">
+                  <CardHeader className="pb-3 sticky top-0 bg-card z-10">
+                    <CardTitle className="text-lg">Report Selection</CardTitle>
+                    <CardDescription className="text-xs">
+                      Choose the type of report you want to generate
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid gap-2">
+                      <Label htmlFor="reportType">Report Type</Label>
+                      <Select 
+                        {...form.register("reportType")}
+                        onValueChange={(value) => form.setValue("reportType", value as typeof REPORT_TYPES[number])}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a report type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {REPORT_TYPES.map((type) => (
+                            <SelectItem key={type} value={type}>
+                              {type}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 <Card className="shadow-sm">
                   <CardHeader className="pb-3 sticky top-0 bg-card z-10">
                     <CardTitle className="text-lg">Personal Information</CardTitle>
@@ -502,78 +474,90 @@ export default function Home() {
                   <CardContent className="space-y-3">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1">
-                        <Label htmlFor="firstName" className="text-sm">First Name</Label>
+                        <Label htmlFor="firstName">First Name</Label>
                         <Input
                           id="firstName"
-                          placeholder="e.g., John"
-                          value={formData.firstName}
-                          onChange={handleInputChange}
-                          required
-                          className="h-8 text-sm"
+                          placeholder="e.g. Dave"
+                          {...form.register("firstName")}
                         />
+                        {form.formState.errors.firstName && (
+                          <p className="text-xs text-destructive">{form.formState.errors.firstName.message}</p>
+                        )}
                       </div>
                       <div className="space-y-1">
-                        <Label htmlFor="lastName" className="text-sm">Last Name</Label>
-                        <Input
-                          id="lastName"
-                          placeholder="e.g., Smith"
-                          value={formData.lastName}
-                          onChange={handleInputChange}
-                          required
-                          className="h-8 text-sm"
-                        />
-                      </div>
+                      <Label htmlFor="lastName">Last Name</Label>
+                      <Input
+                        id="lastName"
+                        placeholder="e.g. Dyno"
+                        {...form.register("lastName")}
+                      />
+                      {form.formState.errors.lastName && (
+                        <p className="text-xs text-destructive">{form.formState.errors.lastName.message}</p>
+                      )}
                     </div>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                        <Label htmlFor="phoneNumber">Phone Number</Label>
+                        <Input
+                          id="phoneNumber"
+                          placeholder="e.g. +919876543210"
+                          {...form.register("phoneNumber")}
+                        />
+                        {form.formState.errors.phoneNumber && (
+                          <p className="text-xs text-destructive">{form.formState.errors.phoneNumber.message}</p>
+                        )}
+                      </div>
+
+                   
 
                     <div className="space-y-1">
-                      <Label htmlFor="email" className="text-sm">Email</Label>
+                      <Label htmlFor="email">Email</Label>
                       <Input
                         id="email"
                         type="email"
-                        placeholder="e.g., john.smith@example.com"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        required
-                        className="h-8 text-sm"
+                        placeholder="e.g. davedyno@gmail.com"
+                        {...form.register("email")}
                       />
+                      {form.formState.errors.email && (
+                        <p className="text-xs text-destructive">{form.formState.errors.email.message}</p>
+                      )}
+                    </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1">
-                        <Label htmlFor="dateOfBirth" className="text-sm">Date of Birth</Label>
+                        <Label htmlFor="dateOfBirth">Date of Birth</Label>
                         <Input
                           id="dateOfBirth"
                           type="date"
-                          value={formData.dateOfBirth}
-                          onChange={handleInputChange}
-                          required
-                          className="h-8 text-sm"
+                          {...form.register("dateOfBirth")}
                         />
+                        {form.formState.errors.dateOfBirth && (
+                          <p className="text-xs text-destructive">{form.formState.errors.dateOfBirth.message}</p>
+                        )}
                       </div>
                       <div className="space-y-1">
-                        <Label htmlFor="timeOfBirth" className="text-sm">Time of Birth</Label>
+                        <Label htmlFor="timeOfBirth">Time of Birth</Label>
                         <Input
                           id="timeOfBirth"
                           type="time"
-                          value={formData.timeOfBirth}
-                          onChange={handleInputChange}
-                          required
-                          className="h-8 text-sm"
+                          {...form.register("timeOfBirth")}
                         />
+                        {form.formState.errors.timeOfBirth && (
+                          <p className="text-xs text-destructive">{form.formState.errors.timeOfBirth.message}</p>
+                        )}
                       </div>
                     </div>
 
                     <div className="space-y-1">
-                      <Label htmlFor="birthPlace" className="text-sm">Place of Birth</Label>
+                      <Label htmlFor="birthPlace">Place of Birth</Label>
                       <div className="flex gap-2">
                         <div className="relative flex-1">
                           <Input
                             id="birthPlace"
                             placeholder="Search for a city..."
-                            value={formData.birthPlace}
-                            onChange={handleLocationSearch}
-                            required
-                            className="h-8 text-sm"
+                            {...form.register("birthPlace")}
                           />
                           {isSearching && (
                             <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -617,30 +601,30 @@ export default function Home() {
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div className="space-y-1">
-                        <Label htmlFor="latitude" className="text-sm">Latitude</Label>
+                        <Label htmlFor="latitude">Latitude</Label>
                         <Input
                           id="latitude"
                           type="number"
                           step="any"
                           placeholder="e.g., 40.7128"
-                          value={formData.latitude || ''}
-                          onChange={handleCoordinateChange}
-                          required
-                          className="h-8 text-sm"
+                          {...form.register("latitude")}
                         />
+                        {form.formState.errors.latitude && (
+                          <p className="text-xs text-destructive">{form.formState.errors.latitude.message}</p>
+                        )}
                       </div>
                       <div className="space-y-1">
-                        <Label htmlFor="longitude" className="text-sm">Longitude</Label>
+                        <Label htmlFor="longitude">Longitude</Label>
                         <Input
                           id="longitude"
                           type="number"
                           step="any"
                           placeholder="e.g., -74.0060"
-                          value={formData.longitude || ''}
-                          onChange={handleCoordinateChange}
-                          required
-                          className="h-8 text-sm"
+                          {...form.register("longitude")}
                         />
+                        {form.formState.errors.longitude && (
+                          <p className="text-xs text-destructive">{form.formState.errors.longitude.message}</p>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -657,35 +641,38 @@ export default function Home() {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="space-y-1">
-                      <Label htmlFor="companyName" className="text-sm">Company Name</Label>
+                      <Label htmlFor="companyName">Company Name</Label>
                       <Input
                         id="companyName"
                         placeholder="e.g., NextGen Astrology Inc."
-                        value={formData.companyName}
-                        onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
-                        className="h-8 text-sm"
+                        {...form.register("companyName")}
                       />
+                      {form.formState.errors.companyName && (
+                        <p className="text-xs text-destructive">{form.formState.errors.companyName.message}</p>
+                      )}
                     </div>
                     <div className="space-y-1">
-                      <Label htmlFor="companySlogan" className="text-sm">Company Slogan/Tagline</Label>
+                      <Label htmlFor="companySlogan">Company Slogan/Tagline</Label>
                       <Input
                         id="companySlogan"
                         placeholder="e.g., 'Transforming lives through Vedic Astrology'"
-                        value={formData.companySlogan}
-                        onChange={(e) => setFormData({ ...formData, companySlogan: e.target.value })}
-                        className="h-8 text-sm"
+                        {...form.register("companySlogan")}
                       />
+                      {form.formState.errors.companySlogan && (
+                        <p className="text-xs text-destructive">{form.formState.errors.companySlogan.message}</p>
+                      )}
                     </div>
                     <div className="space-y-1">
-                      <Label htmlFor="companyYear" className="text-sm">Establishment Year</Label>
+                      <Label htmlFor="companyYear">Establishment Year</Label>
                       <Input
                         id="companyYear"
                         type="number"
                         placeholder="e.g., 2015"
-                        value={formData.companyYear}
-                        onChange={(e) => setFormData({ ...formData, companyYear: e.target.value })}
-                        className="h-8 text-sm"
+                        {...form.register("companyYear")}
                       />
+                      {form.formState.errors.companyYear && (
+                        <p className="text-xs text-destructive">{form.formState.errors.companyYear.message}</p>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -701,40 +688,43 @@ export default function Home() {
                   </CardHeader>
                   <CardContent className="space-y-3">
                     <div className="space-y-1">
-                      <Label htmlFor="reportName" className="text-sm">Report Name</Label>
+                      <Label htmlFor="reportName">Report Name</Label>
                       <Input
                         id="reportName"
                         placeholder="e.g., Comprehensive Birth Chart Analysis"
-                        value={formData.reportName}
-                        onChange={(e) => setFormData({ ...formData, reportName: e.target.value })}
-                        className="h-8 text-sm"
+                        {...form.register("reportName")}
                       />
+                      {form.formState.errors.reportName && (
+                        <p className="text-xs text-destructive">{form.formState.errors.reportName.message}</p>
+                      )}
                     </div>
                     <div className="space-y-1">
-                      <Label htmlFor="astrologerName" className="text-sm">Astrologer Name</Label>
+                      <Label htmlFor="astrologerName">Astrologer Name</Label>
                       <Input
                         id="astrologerName"
                         placeholder="e.g., John Doe"
-                        value={formData.astrologerName}
-                        onChange={(e) => setFormData({ ...formData, astrologerName: e.target.value })}
-                        className="h-8 text-sm"
+                        {...form.register("astrologerName")}
                       />
+                      {form.formState.errors.astrologerName && (
+                        <p className="text-xs text-destructive">{form.formState.errors.astrologerName.message}</p>
+                      )}
                     </div>
                     <div className="space-y-1">
-                      <Label htmlFor="aboutReport" className="text-sm">About Report</Label>
+                      <Label htmlFor="aboutReport">About Report</Label>
                       <Input
                         id="aboutReport"
                         placeholder="e.g., This report provides insights into your birth chart..."
-                        value={formData.aboutReport}
-                        onChange={(e) => setFormData({ ...formData, aboutReport: e.target.value })}
-                        className="h-8 text-sm"
+                        {...form.register("aboutReport")}
                       />
+                      {form.formState.errors.aboutReport && (
+                        <p className="text-xs text-destructive">{form.formState.errors.aboutReport.message}</p>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
               </TabsContent>
 
-              <div className="flex justify-end gap-3 mt-3 sticky bottom-0 bg-background/95 py-3 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+              <div className="flex justify-end gap-3 mt-3 sticky bottom-0 ">
                 <Button
                   type="submit"
                   size="sm"
