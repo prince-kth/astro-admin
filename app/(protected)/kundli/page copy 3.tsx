@@ -188,14 +188,14 @@ export default function Home() {
           )}&limit=5`
         );
         const data = await response.json();
-
+        
         const suggestions: LocationSuggestion[] = data.map((item: any) => ({
           place_id: item.place_id,
           display_name: item.display_name,
           lat: item.lat,
           lon: item.lon,
         }));
-
+        
         setLocationSuggestions(suggestions);
       } catch (error) {
         console.error('Error searching for locations:', error);
@@ -216,17 +216,17 @@ export default function Home() {
 
   const handleCoordinateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
-
+    
     if (id === 'latitude' && !validateCoordinates(value, form.getValues('longitude'))) {
       setLocationError('Latitude must be between -90 and 90 degrees');
       return;
     }
-
+    
     if (id === 'longitude' && !validateCoordinates(form.getValues('latitude'), value)) {
       setLocationError('Longitude must be between -180 and 180 degrees');
       return;
     }
-
+    
     setLocationError('');
     form.setValue(id as keyof KundliFormValues, value);
   };
@@ -254,13 +254,13 @@ export default function Home() {
           const response = await fetch(
             `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
           );
-
+          
           if (!response.ok) {
             throw new Error('Failed to get location details');
           }
 
           const data = await response.json();
-
+          
           // Format address components
           const city = data.address.city || data.address.town || data.address.village || '';
           const state = data.address.state || '';
@@ -283,7 +283,7 @@ export default function Home() {
       },
       (error) => {
         setIsLocating(false);
-        switch (error.code) {
+        switch(error.code) {
           case error.PERMISSION_DENIED:
             setLocationError('Location permission denied. Please enter your location manually.');
             break;
@@ -320,8 +320,8 @@ export default function Home() {
         step: 0,
         message: loadingMessages[0]
       });
-
-      const response = await fetch('https://astrophi-backend.onrender.com/generate_kundli', {
+      
+      const response = await fetch('http://192.168.29.187:5000/generate_kundli', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -389,11 +389,11 @@ export default function Home() {
         },
         body: JSON.stringify(requestData)
       });
-
+      
       // Log the response from the API
       const analysisData = await response.json();
       console.log(`Response received from ${apiEndpoint}:`, analysisData);
-
+      
       setLoadingState({
         isLoading: true,
         step: 3,
@@ -426,7 +426,7 @@ export default function Home() {
 
       // Create a blob from the PDF data
       const pdfBlob = await pdfResponse.blob();
-
+      
       // Create a download link and trigger it
       const downloadUrl = window.URL.createObjectURL(pdfBlob);
       const link = document.createElement('a');
@@ -455,7 +455,7 @@ export default function Home() {
   };
 
   return (
-    <div className={`
+    <div  className={`
       flex 
       flex-col 
       bg-gradient-to-b 
@@ -470,11 +470,11 @@ export default function Home() {
             Astrological Reports
           </h1>
           <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            {step === 'select-report'
+            {step === 'select-report' 
               ? "Choose from our collection of mystical reports to unveil your cosmic destiny"
               : step === 'user-type'
-                ? "Tell us about yourself to begin your astrological journey"
-                : "Fill in your details for an accurate reading"}
+              ? "Tell us about yourself to begin your astrological journey"
+              : "Fill in your details for an accurate reading"}
           </p>
         </div>
 
@@ -511,10 +511,11 @@ export default function Home() {
                     {[0, 1, 2, 3].map((step) => (
                       <div
                         key={step}
-                        className={`w-2 h-2 rounded-full transition-all duration-500 ${step <= loadingState.step
+                        className={`w-2 h-2 rounded-full transition-all duration-500 ${
+                          step <= loadingState.step
                             ? 'bg-primary scale-100'
                             : 'bg-primary/30 scale-75'
-                          }`}
+                        }`}
                       />
                     ))}
                   </div>
@@ -525,7 +526,7 @@ export default function Home() {
         ) : (
           <div className="container mx-auto max-w-7xl">
             {step === 'select-report' && (
-              <motion.div
+              <motion.div 
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -536,79 +537,22 @@ export default function Home() {
                   return (
                     <motion.div
                       key={reportType}
-                      whileHover={{ scale: 1.05, y: -5 }}
+                      whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => {
                         setSelectedReport(reportType);
                         setStep('user-type');
                       }}
-                      style={{
-                        '--bg-image': `url('/assets/${reportType.toLowerCase().replace(/\s+/g, '-')}.png')`
-                      } as any}
-                      className={`
-                        relative
-                        cursor-pointer 
-                        rounded-xl 
-                        p-8
-                        overflow-hidden
-                        bg-gradient-to-br 
-                        ${metadata.color}
-                        border 
-                        border-white/10 
-                        transition-all 
-                        duration-500
-                        ${metadata.borderColor}
-                        flex 
-                        flex-col 
-                        items-center 
-                        text-center 
-                        space-y-4 
-                        group
-                        hover:shadow-2xl
-                        hover:shadow-primary/20
-                        backdrop-blur-sm
-                        before:absolute
-                        before:inset-0
-                        before:bg-[image:var(--bg-image)]
-                        before:bg-cover
-                        before:bg-center
-                        before:opacity-20
-                        before:mix-blend-overlay
-                        before:transition-all
-                        before:duration-500
-                        hover:before:opacity-40
-                        hover:before:scale-110
-                        after:absolute
-                        after:inset-0
-                        after:bg-gradient-to-b
-                        after:from-transparent
-                        after:via-black/20
-                        after:to-black/40
-                        after:opacity-70
-                        after:transition-opacity
-                        after:duration-500
-                        hover:after:opacity-60
-                      `}
+                      className={`cursor-pointer rounded-xl p-6 bg-gradient-to-br ${metadata.color} 
+                        border border-primary/10 ${metadata.borderColor} transition-all duration-300
+                        flex flex-col items-center text-center space-y-4 shadow-sm hover:shadow-md`}
                     >
-                      <div className="
-                        relative z-10
-                        p-4 
-                        rounded-full 
-                        bg-white/10 
-                        backdrop-blur-sm
-                        ring-1
-                        ring-white/20
-                        shadow-lg
-                        transition-transform
-                        duration-500
-                        group-hover:scale-110
-                        group-hover:ring-white/30
-                      ">
-                        <metadata.icon className="w-10 h-10 transition-colors duration-500 text-white/80 group-hover:text-white" />
+                      <div className="p-3 rounded-full bg-white/10 backdrop-blur-sm">
+                        <metadata.icon className="w-8 h-8" />
                       </div>
-                      <div className="relative z-10 space-y-2">
-                        <h3 className="text-xl font-semibold tracking-tight text-white group-hover:text-white/90">{reportType}</h3>
-                        <p className="text-sm text-white/70 group-hover:text-white/80 transition-colors duration-500">{metadata.description}</p>
+                      <div className="space-y-2">
+                        <h3 className="font-semibold tracking-tight">{reportType}</h3>
+                        <p className="text-sm text-muted-foreground">{metadata.description}</p>
                       </div>
                     </motion.div>
                   );
@@ -616,8 +560,8 @@ export default function Home() {
               </motion.div>
             )}
 
-            {step === 'user-type' && (
-              <motion.div
+            {step === 'user-type' && selectedReport && (
+              <motion.div 
                 className="max-w-md mx-auto space-y-6"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -629,20 +573,18 @@ export default function Home() {
                     <CardDescription>{REPORT_METADATA[selectedReport].description}</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <Button
-                      className="w-full"
+                    <Button 
+                      className="w-full" 
                       variant="default"
                       onClick={() => {
-                        if (selectedReport) {
-                          form.setValue("reportType", selectedReport);
-                          setStep('form');
-                        }
+                        form.setValue("reportType", selectedReport);
+                        setStep('form');
                       }}
                     >
                       New User
                     </Button>
-                    <Button
-                      className="w-full"
+                    <Button 
+                      className="w-full" 
                       variant="outline"
                       onClick={() => {
                         toast.info("Existing user flow - Coming soon!");
@@ -650,8 +592,8 @@ export default function Home() {
                     >
                       Existing User
                     </Button>
-                    <Button
-                      className="w-full"
+                    <Button 
+                      className="w-full" 
                       variant="ghost"
                       onClick={() => {
                         setSelectedReport(null);
@@ -678,7 +620,7 @@ export default function Home() {
                       <CardTitle>Selected: {selectedReport}</CardTitle>
                       <CardDescription>{REPORT_METADATA[selectedReport!].description}</CardDescription>
                     </div>
-                    <Button
+                    <Button 
                       variant="ghost"
                       onClick={() => setStep('select-report')}
                     >
@@ -754,19 +696,19 @@ export default function Home() {
                               )}
                             </div>
                             <div className="space-y-1">
-                              <Label htmlFor="lastName">Last Name</Label>
-                              <Input
-                                id="lastName"
-                                placeholder="e.g. Dyno"
-                                {...form.register("lastName")}
-                              />
-                              {form.formState.errors.lastName && (
-                                <p className="text-xs text-destructive">{form.formState.errors.lastName.message}</p>
-                              )}
-                            </div>
+                            <Label htmlFor="lastName">Last Name</Label>
+                            <Input
+                              id="lastName"
+                              placeholder="e.g. Dyno"
+                              {...form.register("lastName")}
+                            />
+                            {form.formState.errors.lastName && (
+                              <p className="text-xs text-destructive">{form.formState.errors.lastName.message}</p>
+                            )}
+                          </div>
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div className="space-y-1">
+                          <div className="space-y-1">
                               <Label htmlFor="phoneNumber">Phone Number</Label>
                               <Input
                                 id="phoneNumber"
@@ -778,18 +720,18 @@ export default function Home() {
                               )}
                             </div>
 
-                            <div className="space-y-1">
-                              <Label htmlFor="email">Email</Label>
-                              <Input
-                                id="email"
-                                type="email"
-                                placeholder="e.g. davedyno@gmail.com"
-                                {...form.register("email")}
-                              />
-                              {form.formState.errors.email && (
-                                <p className="text-xs text-destructive">{form.formState.errors.email.message}</p>
-                              )}
-                            </div>
+                          <div className="space-y-1">
+                            <Label htmlFor="email">Email</Label>
+                            <Input
+                              id="email"
+                              type="email"
+                              placeholder="e.g. davedyno@gmail.com"
+                              {...form.register("email")}
+                            />
+                            {form.formState.errors.email && (
+                              <p className="text-xs text-destructive">{form.formState.errors.email.message}</p>
+                            )}
+                          </div>
                           </div>
 
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -850,9 +792,9 @@ export default function Home() {
                                   </div>
                                 )}
                               </div>
-                              <Button
-                                type="button"
-                                variant="outline"
+                              <Button 
+                                type="button" 
+                                variant="outline" 
                                 onClick={getCurrentLocation}
                                 disabled={isLocating}
                               >
@@ -1014,14 +956,14 @@ export default function Home() {
                       </Button>
                     </div>
                   </Tabs>
-                </form>
-              </motion.div>
-            )}
-          </div>
-
+                  </form>
+                </motion.div>
+              )}
+            </div>
+          
         )}
       </div>
-
+      
     </div>
   );
 }

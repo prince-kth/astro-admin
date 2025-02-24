@@ -321,7 +321,7 @@ export default function Home() {
         message: loadingMessages[0]
       });
 
-      const response = await fetch('https://astrophi-backend.onrender.com/generate_kundli', {
+      const response = await fetch('http://192.168.29.187:5000/generate_kundli', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -633,10 +633,8 @@ export default function Home() {
                       className="w-full"
                       variant="default"
                       onClick={() => {
-                        if (selectedReport) {
-                          form.setValue("reportType", selectedReport);
-                          setStep('form');
-                        }
+                        form.setValue("reportType", selectedReport);
+                        setStep('form');
                       }}
                     >
                       New User

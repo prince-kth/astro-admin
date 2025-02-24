@@ -13,7 +13,7 @@ export function Footer() {
               className="h-7 w-auto"
             />
             <span className="text-sm font-medium text-slate-600">
-              Designed and Developed by{" "}
+              Designed and Product by{" "}
               <a
                 href="https://kriscent.in"
                 target="_blank"

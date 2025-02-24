@@ -37,10 +37,20 @@ RASHI_TRANSLATION = {
     'Meena': 'Pisces'
 }
 
-# Mapping of Rashis to their numbers (using English names)
-RASHI_TO_NUMBER = {
-    'Aries': 1, 'Taurus': 2, 'Gemini': 3, 'Cancer': 4, 'Leo': 5, 'Virgo': 6,
-    'Libra': 7, 'Scorpio': 8, 'Sagittarius': 9, 'Capricorn': 10, 'Aquarius': 11, 'Pisces': 12
+# Mapping of Rashis to their numbers
+ZODIAC_TO_NUMBER = {
+    'Aries': 1,
+    'Taurus': 2,
+    'Gemini': 3,
+    'Cancer': 4,
+    'Leo': 5,
+    'Virgo': 6,
+    'Libra': 7,
+    'Scorpio': 8,
+    'Sagittarius': 9,
+    'Capricorn': 10,
+    'Aquarius': 11,
+    'Pisces': 12
 }
 
 # Mapping of Rashis and their lords (using English names)
@@ -72,33 +82,27 @@ nakshatras = [
     ('Purva Bhadrapada', 'Jupiter', 320), ('Uttara Bhadrapada', 'Saturn', 333.20), ('Revati', 'Mercury', 346.40)
 ]
 
-# Function to calculate Nakshatra
+def convert_divisional_charts_to_numbers(charts):
+    """
+    Convert zodiac signs in divisional charts to their corresponding numbers
+    """
+    return {
+        chart_type: ZODIAC_TO_NUMBER[sign]
+        for chart_type, sign in charts.items()
+    }
+
 def get_nakshatra(longitude):
     nak_span = 13.333333333333334  # 360/27
     nakshatra_index = int(longitude / nak_span)
     return nakshatras[nakshatra_index]
 
-# House calculations based on Rashi
 def get_house_from_rashi(rashi, lagna_rashi):
-    # Fixed order of rashis according to natural zodiac
     fixed_rashi_order = [
-        'Aries',      # 1
-        'Taurus',     # 2
-        'Gemini',     # 3
-        'Cancer',     # 4
-        'Leo',        # 5
-        'Virgo',      # 6
-        'Libra',      # 7
-        'Scorpio',    # 8
-        'Sagittarius', # 9
-        'Capricorn',  # 10
-        'Aquarius',   # 11
-        'Pisces'      # 12
+        'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
+        'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'
     ]
-    
     return fixed_rashi_order.index(rashi) + 1
 
-# Function to calculate planetary states
 def calculate_planetary_states(planet, rashi, degrees_in_rashi, speed, sun_position=None):
     retro = False
     combust = False
@@ -129,20 +133,16 @@ def calculate_planetary_states(planet, rashi, degrees_in_rashi, speed, sun_posit
 
     return {'retro': retro, 'combust': combust, 'status': status}
 
-# House position calculation using Whole Sign System
 def calculate_house_positions(jd, lat, lon):
     flags = swe.FLG_SWIEPH
     hsys = b'W'  # Whole Sign system
     cusps, asc_mc = swe.houses_ex(jd, lat, lon, hsys, flags)
     return list(cusps), asc_mc[0]
 
-# Function to calculate D2 (Hora) chart position
 def calculate_d2(total_degrees, planet):
     base_rashi = int(total_degrees / 30)
     degree_in_rashi = total_degrees % 30
     
-    # For Sun and Jupiter, first 15° is Leo, next 15° is Cancer
-    # For other planets, first 15° is Cancer, next 15° is Leo
     if planet in ['Sun', 'Jupiter']:
         hora_rashi = 'Leo' if degree_in_rashi < 15 else 'Cancer'
     else:
@@ -150,22 +150,11 @@ def calculate_d2(total_degrees, planet):
     
     return hora_rashi
 
-# Function to calculate D4 (Chaturthamsa) chart position
 def calculate_d4(total_degrees):
-    """
-    Calculate D4 (Chaturthamsa) chart position
-    Each rashi (30°) is divided into 4 parts of 7.5° each
-    The count starts from the current rashi and moves by 3 rashis for each quarter
-    """
-    base_rashi = int(total_degrees / 30)  # Get the base rashi number (0-11)
-    degree_in_rashi = total_degrees % 30   # Get degrees within the rashi
-    quarter = int(degree_in_rashi / 7.5)   # Which quarter of the rashi (0-3)
+    base_rashi = int(total_degrees / 30)
+    degree_in_rashi = total_degrees % 30
+    quarter = int(degree_in_rashi / 7.5)
     
-    # For each rashi, the quarters map to:
-    # 0-7.5°: Same rashi
-    # 7.5-15°: Base + 3 rashis
-    # 15-22.5°: Base + 6 rashis
-    # 22.5-30°: Base + 9 rashis
     final_rashi_num = (base_rashi + (quarter * 3)) % 12
     
     fixed_rashi_order = [
@@ -175,38 +164,22 @@ def calculate_d4(total_degrees):
     
     return fixed_rashi_order[final_rashi_num]
 
-# Function to calculate D9 (Navamsa) chart position
 def calculate_d9(total_degrees, is_ascendant=False):
-    """
-    Calculate D9 (Navamsa) chart position
-    Each rashi (30°) is divided into 9 equal parts of 3°20' each
-    For odd signs (Aries, Gemini, etc.), counting starts from the same sign
-    For even signs (Taurus, Cancer, etc.), counting starts from the 9th sign from it
-    Final position is shifted +4 signs for planets, -4 signs for ascendant
-    """
-    base_rashi = int(total_degrees / 30)  # Get the base rashi number (0-11)
-    degree_in_rashi = total_degrees % 30   # Get degrees within the rashi
-    
-    # Each navamsa is 3°20' (30/9 = 3.333... degrees)
+    base_rashi = int(total_degrees / 30)
+    degree_in_rashi = total_degrees % 30
     navamsa = int(degree_in_rashi / 3.333333)
     
-    # For odd signs (0-based even index), count from same sign
-    # For even signs (0-based odd index), count from 9th sign
-    if base_rashi % 2 == 0:  # Odd sign (0-based even index)
+    if base_rashi % 2 == 0:
         start_rashi = base_rashi
-    else:  # Even sign
-        start_rashi = (base_rashi + 8) % 12  # 9th from base_rashi
+    else:
+        start_rashi = (base_rashi + 8) % 12
     
-    # Calculate initial position
     initial_rashi_num = (start_rashi + navamsa) % 12
     
-    # For ascendant subtract 4 signs, for planets add 4 signs
     if is_ascendant:
-        final_rashi_num = (initial_rashi_num) % 12  # Subtract 4 for ascendant
+        final_rashi_num = (initial_rashi_num) % 12
     else:
-        final_rashi_num = (initial_rashi_num + 4) % 12  # Add 4 for planets
-
-    
+        final_rashi_num = (initial_rashi_num + 4) % 12
     
     fixed_rashi_order = [
         'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
@@ -215,26 +188,17 @@ def calculate_d9(total_degrees, is_ascendant=False):
     
     return fixed_rashi_order[final_rashi_num]
 
-# Function to calculate D10 (Dashamamsha) chart position
 def calculate_d10(total_degrees):
-    """
-    Calculate D10 (Dashamamsha) chart position
-    Each rashi (30°) is divided into 10 parts of 3° each
-    For odd signs (Aries, Gemini, Leo, Libra, Sagittarius, Aquarius): count starts from the same sign
-    For even signs (Taurus, Cancer, Virgo, Scorpio, Capricorn, Pisces): count starts from the 9th sign
-    """
-    base_rashi = int(total_degrees / 30)  # Get the base rashi number (0-11)
-    degree_in_rashi = total_degrees % 30   # Get degrees within the rashi
-    division = int(degree_in_rashi / 3)    # Which division (0-9)
+    base_rashi = int(total_degrees / 30)
+    degree_in_rashi = total_degrees % 30
+    division = int(degree_in_rashi / 3)
     
-    # For odd signs (1,3,5,7,9,11) start from same sign
-    # For even signs (2,4,6,8,10,12) start from 9th sign
-    is_odd_sign = (base_rashi % 2 == 0)  # Note: base_rashi is 0-based, so even index means odd sign
+    is_odd_sign = (base_rashi % 2 == 0)
     
-    if is_odd_sign:  # Odd signs
+    if is_odd_sign:
         start_rashi = base_rashi
-    else:  # Even signs
-        start_rashi = (base_rashi + 8) % 12  # 9th from base_rashi
+    else:
+        start_rashi = (base_rashi + 8) % 12
     
     final_rashi_num = (start_rashi + division) % 12
     
@@ -245,35 +209,22 @@ def calculate_d10(total_degrees):
     
     return fixed_rashi_order[final_rashi_num]
 
-# Function to calculate D60 (Shashtiamsha) chart position
-def calculate_d60(total_degrees,planet=None):
-    """
-    Calculate D60 (Shashtiamsha) chart position
-    Each rashi (30°) is divided into 60 parts of 0.5° each
-    The counting pattern depends on whether the rashi is:
-    - Movable (Chara): Aries, Cancer, Libra, Capricorn - start from same sign
-    - Fixed (Sthira): Taurus, Leo, Scorpio, Aquarius - start from 5th sign
-    - Dual (Dvisvabhava): Gemini, Virgo, Sagittarius, Pisces - start from 9th sign
-    """
-    base_rashi = int(total_degrees / 30)  # Get the base rashi number (0-11)
-    degree_in_rashi = total_degrees % 30   # Get degrees within the rashi
-    division = int(degree_in_rashi / 0.5)  # Which division (0-59)
+def calculate_d60(total_degrees, planet=None):
+    base_rashi = int(total_degrees / 30)
+    degree_in_rashi = total_degrees % 30
+    division = int(degree_in_rashi / 0.5)
     
-    # Determine rashi type
-    rashi_type = base_rashi % 3  # 0 for movable, 1 for fixed, 2 for dual
+    rashi_type = base_rashi % 3
     
-    # Set starting rashi based on rashi type
-    if rashi_type == 0:  # Movable signs (Aries, Cancer, Libra, Capricorn)
+    if rashi_type == 0:
         start_rashi = base_rashi
-    elif rashi_type == 1:  # Fixed signs (Taurus, Leo, Scorpio, Aquarius)
-        start_rashi = (base_rashi + 4) % 12  # 5th from base_rashi
-    else:  # Dual signs (Gemini, Virgo, Sagittarius, Pisces)
-        start_rashi = (base_rashi + 8) % 12  # 9th from base_rashi
+    elif rashi_type == 1:
+        start_rashi = (base_rashi + 4) % 12
+    else:
+        start_rashi = (base_rashi + 8) % 12
     
-    # Calculate final position
-    # Each 5 divisions (2.5°) completes one round of zodiac
-    zodiac_rounds = division // 5  # How many complete rounds of zodiac
-    remaining_divisions = division % 5  # Remaining divisions after complete rounds
+    zodiac_rounds = division // 5
+    remaining_divisions = division % 5
     
     final_rashi_num = (start_rashi + zodiac_rounds + remaining_divisions) % 12
     
@@ -284,22 +235,6 @@ def calculate_d60(total_degrees,planet=None):
     
     return fixed_rashi_order[final_rashi_num]
 
-# Helper function to convert rashi to house number
-def get_house_number_from_rashi(rashi, lagna_rashi):
-    fixed_rashi_order = [
-        'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
-        'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'
-    ]
-    
-    # Get the indices
-    rashi_index = fixed_rashi_order.index(rashi)
-    lagna_index = fixed_rashi_order.index(lagna_rashi)
-    
-    # Calculate house number
-    house = ((rashi_index - lagna_index) % 12) + 1
-    return house
-
-# Function to calculate planetary details including nakshatras, retrograde, combustion, etc.
 def calculate_extended_planetary_info(julian_day, lat, lon):
     swe.set_sid_mode(swe.SIDM_LAHIRI)
     ayanamsa = swe.get_ayanamsa(julian_day)
@@ -346,7 +281,6 @@ def calculate_extended_planetary_info(julian_day, lat, lon):
             'status': states['status']
         }
 
-    # Calculate for major planets
     planet_mappings = [
         ('Sun', swe.SUN), ('Moon', swe.MOON), ('Mars', swe.MARS),
         ('Mercury', swe.MERCURY), ('Venus', swe.VENUS), 
@@ -358,21 +292,17 @@ def calculate_extended_planetary_info(julian_day, lat, lon):
         rashi = planet_info['rashi']
         house_position = get_house_from_rashi(rashi, lagna_rashi)
         
-        # Calculate divisional charts with house numbers
         total_degrees = planet_info['total_degrees']
-        d2_rashi = calculate_d2(total_degrees, planet)
-        d4_rashi = calculate_d4(total_degrees)
-        d9_rashi = calculate_d9(total_degrees)
-        d10_rashi = calculate_d10(total_degrees)
-        d60_rashi = calculate_d60(total_degrees, planet)
-        
         divisional_charts = {
-            'D2': get_house_number_from_rashi(d2_rashi, lagna_rashi),
-            'D4': get_house_number_from_rashi(d4_rashi, lagna_rashi),
-            'D9': get_house_number_from_rashi(d9_rashi, lagna_rashi),
-            'D10': get_house_number_from_rashi(d10_rashi, lagna_rashi),
-            'D60': get_house_number_from_rashi(d60_rashi, lagna_rashi)
+            'D2': calculate_d2(total_degrees, planet),
+            'D4': calculate_d4(total_degrees),
+            'D9': calculate_d9(total_degrees),
+            'D10': calculate_d10(total_degrees),
+            'D60': calculate_d60(total_degrees, planet)
         }
+        
+        # Convert divisional charts to numbers
+        divisional_charts = convert_divisional_charts_to_numbers(divisional_charts)
         
         planetary_info[planet] = {
             'rashi': rashi,
@@ -392,14 +322,17 @@ def calculate_extended_planetary_info(julian_day, lat, lon):
     rahu_info = get_planet_info(swe.MEAN_NODE, 'Rahu', julian_day, ayanamsa)
     rahu_house = get_house_from_rashi(rahu_info['rashi'], lagna_rashi)
     
-    # Calculate divisional charts with house numbers
+    # Calculate divisional charts for Rahu
     rahu_divisional_charts = {
-        'D2': get_house_number_from_rashi(calculate_d2(rahu_info['total_degrees'], 'Rahu'), lagna_rashi),
-        'D4': get_house_number_from_rashi(calculate_d4(rahu_info['total_degrees']), lagna_rashi),
-        'D9': get_house_number_from_rashi(calculate_d9(rahu_info['total_degrees']), lagna_rashi),
-        'D10': get_house_number_from_rashi(calculate_d10(rahu_info['total_degrees']), lagna_rashi),
-        'D60': get_house_number_from_rashi(calculate_d60(rahu_info['total_degrees'], 'Rahu'), lagna_rashi)
+        'D2': calculate_d2(rahu_info['total_degrees'], 'Rahu'),
+        'D4': calculate_d4(rahu_info['total_degrees']),
+        'D9': calculate_d9(rahu_info['total_degrees']),
+        'D10': calculate_d10(rahu_info['total_degrees']),
+        'D60': calculate_d60(rahu_info['total_degrees'], 'Rahu')
     }
+    
+    # Convert Rahu's divisional charts to numbers
+    rahu_divisional_charts = convert_divisional_charts_to_numbers(rahu_divisional_charts)
     
     planetary_info['Rahu'] = {
         'rashi': rahu_info['rashi'],
@@ -415,7 +348,7 @@ def calculate_extended_planetary_info(julian_day, lat, lon):
         'divisional_charts': rahu_divisional_charts
     }
 
-    # Calculate Ketu position (180° from Rahu)
+    # Calculate Ketu position
     ketu_longitude = (rahu_info['total_degrees'] + 180) % 360
     ketu_rashi_index = int(ketu_longitude / 30)
     sanskrit_ketu_rashi = list(RASHI_TRANSLATION.keys())[ketu_rashi_index]
@@ -424,14 +357,17 @@ def calculate_extended_planetary_info(julian_day, lat, lon):
     ketu_degrees = ketu_longitude % 30
     ketu_nakshatra = get_nakshatra(ketu_longitude)
     
-    # Calculate divisional charts with house numbers
+    # Calculate divisional charts for Ketu
     ketu_divisional_charts = {
-        'D2': get_house_number_from_rashi(calculate_d2(ketu_longitude, 'Ketu'), lagna_rashi),
-        'D4': get_house_number_from_rashi(calculate_d4(ketu_longitude), lagna_rashi),
-        'D9': get_house_number_from_rashi(calculate_d9(ketu_longitude), lagna_rashi),
-        'D10': get_house_number_from_rashi(calculate_d10(ketu_longitude), lagna_rashi),
-        'D60': get_house_number_from_rashi(calculate_d60(ketu_longitude, 'Ketu'), lagna_rashi)
+        'D2': calculate_d2(ketu_longitude, 'Ketu'),
+        'D4': calculate_d4(ketu_longitude),
+        'D9': calculate_d9(ketu_longitude),
+        'D10': calculate_d10(ketu_longitude),
+        'D60': calculate_d60(ketu_longitude, 'Ketu')
     }
+    
+    # Convert Ketu's divisional charts to numbers
+    ketu_divisional_charts = convert_divisional_charts_to_numbers(ketu_divisional_charts)
 
     planetary_info['Ketu'] = {
         'rashi': ketu_rashi,
@@ -452,14 +388,17 @@ def calculate_extended_planetary_info(julian_day, lat, lon):
     ascendant_rashi = RASHI_TRANSLATION[sanskrit_ascendant_rashi]
     ascendant_nakshatra = get_nakshatra(ascendant)
     
-    # Calculate divisional charts with house numbers
+    # Calculate divisional charts for Ascendant
     ascendant_divisional_charts = {
-        'D2': get_house_number_from_rashi(calculate_d2(ascendant, 'Ascendant'), lagna_rashi),
-        'D4': get_house_number_from_rashi(calculate_d4(ascendant), lagna_rashi),
-        'D9': get_house_number_from_rashi(calculate_d9(ascendant, is_ascendant=True), lagna_rashi),
-        'D10': get_house_number_from_rashi(calculate_d10(ascendant), lagna_rashi),
-        'D60': get_house_number_from_rashi(calculate_d60(ascendant, 'Ascendant'), lagna_rashi)
+        'D2': calculate_d2(ascendant, 'Ascendant'),
+        'D4': calculate_d4(ascendant),
+        'D9': calculate_d9(ascendant, is_ascendant=True),
+        'D10': calculate_d10(ascendant),
+        'D60': calculate_d60(ascendant, 'Ascendant')
     }
+    
+    # Convert Ascendant's divisional charts to numbers
+    ascendant_divisional_charts = convert_divisional_charts_to_numbers(ascendant_divisional_charts)
     
     planetary_info['Ascendant'] = {
         'rashi': ascendant_rashi,

@@ -10,7 +10,8 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
-  useSidebar
+  useSidebar,
+  SidebarTrigger
 } from "./ui/sidebar"
 import { cn } from "@/lib/utils"
 import { useThemeStore } from "@/lib/theme-store"
@@ -122,7 +123,8 @@ export function AdminSidebar() {
           <Menu className="h-5 w-5 text-slate-600" />
         </button>
       )}
-      <Sidebar className="border-r bg-gradient-to-b from-white via-slate-50/40 to-white flex flex-col min-h-screen">
+      <Sidebar variant="floating" className="border-r bg-gradient-to-b from-white via-slate-50/40 to-white flex flex-col min-h-screen">
+
         <SidebarHeader className="h-16 px-6 border-b bg-white/50 backdrop-blur-sm flex items-center">
           <div className="flex items-center gap-3">
             <div className="relative">
@@ -137,6 +139,7 @@ export function AdminSidebar() {
             </div>
           </div>
         </SidebarHeader>
+      {/* <SidebarTrigger className="-ml-1" /> */}
 
         <SidebarContent className="flex flex-col h-full pt-4 overflow-y-auto">
           <div className="px-3 mb-2">
@@ -169,7 +172,7 @@ export function AdminSidebar() {
               >
                 <Link href="/kundli" className="flex items-center gap-3 w-full">
                   <Star className="h-[18px] w-[18px] stroke-[1.5]" />
-                  <span className="font-medium">Kundli Generation</span>
+                  <span className="font-medium">Report Generation</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
@@ -222,7 +225,7 @@ export function AdminSidebar() {
                 "absolute top-0 right-0 w-20 h-20 rounded-bl-[6rem]",
                 getProCardStyles().accent
               )}></div>
-              <div className="relative">
+              {/* <div className="relative">
                 <div className="flex items-center gap-3 mb-2">
                   <div className={cn(
                     "h-9 w-9 rounded-lg flex items-center justify-center",
@@ -244,7 +247,7 @@ export function AdminSidebar() {
                 )}>
                   Upgrade Now
                 </button>
-              </div>
+              </div> */}
             </div>
           </div>
         </SidebarContent>

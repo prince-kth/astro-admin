@@ -1,0 +1,1513 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{fortune_report.company_details.report_name}}</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Quicksand:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --color-primary: #6b9080;
+            --color-secondary: #a4c3b2;
+            --color-accent: #cce3de;
+            --color-background: #eaf4f4;
+            --color-text: #6b9080;
+            --page-margin: 20mm;
+            --a4-width: 210mm;
+            --a4-height: 297mm;
+            --content-width: calc(var(--a4-width) - (var(--page-margin) * 2));
+            --content-height: calc(var(--a4-height) - (var(--page-margin) * 2));
+        }
+
+        @page {
+            margin: 0;
+            size: A4;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            counter-reset: page 0;
+            font-family: 'Quicksand', sans-serif;
+            background: var(--color-background);
+            color: var(--color-text);
+            font-size: 12pt;
+            line-height: 1.6;
+        }
+
+        .page-header {
+            position: absolute;
+            top: 10mm;
+            left: 20mm;
+            right: 20mm;
+            text-align: center;
+        }
+
+        .page-footer {
+            position: absolute;
+            bottom: var(--page-margin);
+            left: var(--page-margin);
+            right: var(--page-margin);
+            height: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--color-primary);
+
+
+            position: absolute;
+            bottom: 10mm;
+            left: 20mm;
+            right: 20mm;
+            text-align: center;
+            padding-top: 1rem;
+            border-top: 1px solid var(--color-accent);
+            color: var(--color-primary);
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .content-area {
+            margin-top: 60px;
+            margin-bottom: 60px;
+            height: calc(100% - 120px);
+            overflow: hidden;
+        }
+
+
+        .page-number:after {
+            content: counter(page);
+            counter-increment: page;
+        }
+
+        /* Hide page number display on front page but keep counting */
+        .front-page .page-number {
+            visibility: hidden;
+        }
+
+        .content-section {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
+        .page {
+            position: relative;
+            width: var(--a4-width);
+            height: var(--a4-height);
+            padding: var(--page-margin);
+            page-break-after: always;
+            /* break-after: page; */
+            overflow: hidden;
+        }
+
+        .front-page {
+            background: linear-gradient(135deg, var(--color-primary));
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            text-align: center;
+        }
+
+        .decorative-border {
+            position: absolute;
+            top: var(--page-margin);
+            left: var(--page-margin);
+            right: var(--page-margin);
+            bottom: var(--page-margin);
+            border: 2px solid var(--color-accent);
+            pointer-events: none;
+        }
+
+        .company-header {
+            margin-top: 3rem;
+            padding: 2rem;
+            width: 100%;
+        }
+
+        .company-title {
+            font-family: 'Cinzel', serif;
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--color-primary);
+            margin-bottom: 1rem;
+            letter-spacing: 2px;
+        }
+
+        .company-subtitle {
+            font-size: 1.2rem;
+            color: var(--color-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .divine-symbol {
+            margin: 2rem 0;
+            font-size: 3rem;
+            color: var(--color-primary);
+            position: relative;
+        }
+
+        .divine-symbol::before,
+        .divine-symbol::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 100px;
+            height: 1px;
+            background: var(--color-accent);
+        }
+
+        .divine-symbol::before {
+            right: calc(100% + 1rem);
+        }
+
+        .divine-symbol::after {
+            left: calc(100% + 1rem);
+        }
+
+        .report-details {
+            margin: 2rem 0;
+            padding: 1.3rem;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 1rem;
+            border: 1px solid var(--color-accent);
+        }
+
+        .report-title {
+            font-family: 'Cinzel', serif;
+            font-size: 2rem;
+            color: var(--color-primary);
+            margin-bottom: 1rem;
+        }
+
+        .astrologer-info {
+            margin-top: 1.5rem;
+            font-style: italic;
+            color: var(--color-secondary);
+        }
+
+        .content-wrapper {
+            position: relative;
+            background: #fff;
+            padding: 2rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(107, 144, 128, 0.1);
+            margin: 1rem 0;
+            border: 1px solid var(--color-accent);
+        }
+
+        .last-page {
+            background: linear-gradient(135deg, var(--color-background), #fff);
+            text-align: center;
+        }
+
+        .social-media-section {
+            margin: 4rem auto;
+            padding: 2rem;
+            max-width: 80%;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 1rem;
+            border: 1px solid var(--color-accent);
+            box-shadow: 0 4px 6px rgba(107, 144, 128, 0.1);
+        }
+
+        .social-links {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            margin: 2rem 0;
+            padding: 1rem;
+        }
+
+        .social-link {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            background: #fff;
+            border: 1px solid var(--color-accent);
+            border-radius: 0.5rem;
+            color: var(--color-primary);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .social-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(107, 144, 128, 0.1);
+        }
+
+        .social-icon {
+            width: 24px;
+            height: 24px;
+            margin-right: 1rem;
+        }
+
+        .contact-info {
+            margin-top: 3rem;
+            padding: 1rem;
+            border-top: 1px solid var(--color-accent);
+        }
+
+        .kundali-info {
+            margin: 2rem auto;
+            max-width: 500px;
+        }
+
+        .kundali-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin: 1rem 0;
+        }
+
+        .kundali-table tr td {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--color-accent);
+        }
+
+        .kundali-table tr td:first-child {
+            font-weight: 600;
+            color: var(--color-primary);
+            width: 40%;
+        }
+
+        .kundali-table tr td:last-child {
+            color: var(--color-text);
+        }
+
+        .section-title {
+            text-align: center;
+            color: var(--color-primary);
+            font-family: 'Cinzel', serif;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--color-accent);
+        }
+
+        /* North Indian Chart Styles */
+        .north-indian-chart {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 20px auto;
+            /* border: 1px solid black; */
+        }
+
+        .chart-house {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            white-space: pre-line;
+            font-size: 10px;
+        }
+
+        .ascendant {
+            font-weight: bold;
+            color: #ff0000;
+            position: relative;
+            top: 48px;
+
+        }
+
+        .chart-container {
+            width: 100%;
+            max-width: 500px;
+            margin: 20px auto;
+        }
+
+        .chart-image {
+            width: 100%;
+            height: auto;
+        }
+
+        /* Add styles for chart numbers and signs */
+        .house-number {
+            margin-top: -45px;
+
+            /* Reduce space between number and sign */
+        }
+
+        /* .planet-sign { */
+        /* margin-top: -35px;    Adjust space above the sign */
+        /* line-height: 1.2;   Reduce line height to bring elements closer */
+        /* } */
+        .planet-sign {
+            position: relative;
+            /* Adjust this value to move planet signs up/down independently */
+            margin-top: -35px;
+        }
+
+        /* Monthly Prediction Styles */
+        /* .content-area {
+        padding: 2rem 3rem;
+    } */
+
+        .month-details {
+            margin-bottom: 2rem;
+        }
+
+        /* .section-title {
+        font-size: 1.875rem;
+        font-weight: 700;
+        margin-bottom: 2rem;
+    } */
+
+        .focus-area {
+            margin-bottom: 2rem;
+        }
+
+        .subsection-title {
+            margin-bottom: 1rem;
+        }
+
+        .highlights-list li,
+        .remedies-list li {
+            margin-bottom: 1rem;
+            text-align: justify;
+        }
+
+        .lucky-grid {
+            margin: 1rem 0;
+        }
+
+        .lucky-item {
+            margin-bottom: 1rem;
+        }
+
+        .prediction-text {
+            text-align: justify;
+        }
+
+        /* .page:last-child {
+            page-break-after: auto !important;
+        } */
+
+        .page.last-page {
+            page-break-after: auto !important;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Front Page -->
+    <div class="page front-page">
+        <div class="decorative-border"></div>
+
+        <div class="company-header">
+            <h1 class="company-title">{{fortune_report.company_details.name}}</h1>
+            <p class="company-subtitle">{{fortune_report.company_details.slogan}}</p>
+            <p class="text-sm text-gray-600">Est. {{fortune_report.company_details.year}}</p>
+        </div>
+
+        <div class="divine-symbol">
+            <div>ॐ</div>
+            <p class="text-xl mt-4">गं गणपतये नमः</p>
+            <p class="text-base text-gray-600">Om Gam Ganapataye Namaha</p>
+        </div>
+
+        <div class="report-details">
+            <h2 class="report-title">{{fortune_report.company_details.report_name}}</h2>
+            <div class="astrologer-info">
+                <p class="text-lg mb-2">Crafted with Divine Wisdom by</p>
+                <p class="text-xl font-semibold">{{fortune_report.company_details.astrologer_name}}</p>
+            </div>
+        </div>
+
+        <div class="page-footer">
+            <div class="company-info">{{fortune_report.company_details.name}}</div>
+            <div class="page-number"></div>
+        </div>
+    </div>
+
+    <!-- Second Page - About -->
+    <div class="page content-page">
+        <div class="page-header">
+            <h3 class="text-lg font-semibold">{{fortune_report.company_details.name}}</h3>
+        </div>
+
+        <div class="mt-16 max-w-3xl mx-auto">
+            <h2 class="text-3xl font-bold mb-8 ">About the Report</h2>
+            <div class="text-gray-700 text-lg text-justify">
+                <!-- {{company_details.about_report}} -->
+                Our comprehensive report offers a deep understanding of the celestial influences shaping your personal,
+                professional, and spiritual life. By analyzing your birth chart (Kundli), we provide insights into how
+                planetary positions affect key aspects such as career, wealth, relationships, and health. With precise
+                astrological calculations, we offer guidance that helps you navigate life’s transitions and make
+                informed decisions.
+
+                Unlike generic astrology readings, our report is tailored to your unique cosmic blueprint. We focus on
+                accuracy and specificity, steering clear of vague generalizations. The report delves into your life’s
+                trajectory, highlighting key periods of growth, challenges, and opportunities. It includes monthly
+                predictions and essential focus areas, helping you stay ahead of significant shifts and take proactive
+                steps to align with cosmic energy for your benefit.
+
+                This is more than just a forecast—it’s a tool for self-awareness and empowerment. By understanding the
+                celestial forces at play, you can align with the natural flow of the universe. Our approach is rooted in
+                precision and clarity, providing practical and transformative insights. Whether you seek guidance in
+                career choices, financial planning, relationships, or overall well-being, our report delivers actionable
+                wisdom to guide you.
+
+                We believe astrology is not about fate but understanding the cosmic rhythms influencing your life.
+                Through this awareness, you gain the confidence to make conscious decisions, break free from
+                limitations, and embrace life with purpose and serenity.
+
+                Our mission is to help you unlock the profound wisdom hidden in your stars. By integrating these
+                insights into your daily life, you can cultivate a deeper connection with yourself and the universe. Let
+                this report be your celestial roadmap, guiding you toward a future of clarity, confidence, and
+                fulfillment.
+            </div>
+        </div>
+
+        <div class="page-footer">
+            <p>{{fortune_report.company_details.report_name}}</p>
+            <div class="page-number"></div>
+        </div>
+    </div>
+
+    <!-- Kundali Information Page -->
+    <div class="page content-page">
+        <div class="page-header">
+            <h3 class="text-lg font-semibold">{{fortune_report.company_details.name}}</h3>
+        </div>
+
+        <div class="kundali-info">
+            <h2 class="section-title">Basic Kundali Information</h2>
+            <table class="kundali-table">
+                <tr>
+                    <td>Name</td>
+                    <td>{{user_details.name}}</td>
+                </tr>
+                <tr>
+                    <td>Birth Date</td>
+                    <td>{{user_details.dob}}</td>
+                </tr>
+                <tr>
+                    <td>Birth Time</td>
+                    <td>{{user_details.time_of_birth}} (Standard Time UTC+5:30)</td>
+                </tr>
+                <tr>
+                    <td>Birth Place</td>
+                    <!-- <td>{{#if user_details.place_of_birth}}{{user_details.place_of_birth}}{{else}}Not Provided{{/if}}</td> -->
+                    <td>{{user_details.place_of_birth}}</td>
+                </tr>
+                <tr>
+                    <td>Latitude</td>
+                    <!-- <td>{{#if user_details.latitude}}{{user_details.latitude}}{{else}}Not Provided{{/if}}</td> -->
+                    <td> {{user_details.latitude}}°N</td>
+                </tr>
+                <tr>
+                    <td>Longitude</td>
+                    <!-- <td>{{#if user_details.longitude}}{{user_details.longitude}}{{else}}Not Provided{{/if}}</td> -->
+                    <td> {{user_details.longitude}}°E</td>
+                </tr>
+                <!-- <tr>
+                    <td>Time Zone</td> -->
+                <!-- <td>{{#if user_details.timezone}}{{user_details.timezone}}{{else}}Not Provided{{/if}}</td> -->
+                <!-- <td>Asia/Kolkata</td>
+                </tr> -->
+                <tr>
+                    <td>Sunrise</td>
+                    <!-- <td>{{#if user_details.sunrise_time}}{{user_details.sunrise_time}}{{else}}Not Available{{/if}}</td> -->
+                    <td> 6:45 AM</td>
+                </tr>
+                <tr>
+                    <td>Sunset</td>
+                    <!-- <td>{{#if user_details.sunset_time}}{{user_details.sunset_time}}{{else}}Not Available{{/if}}</td> -->
+                    <td>6:30 PM</td>
+                </tr>
+                <tr>
+                    <td>Ayanamsa</td>
+                    <!-- <td>{{user_details.ayanamsa}}</td> -->
+                    <td>Lahiri</td>
+                </tr>
+            </table>
+
+        </div>
+
+        <!-- North Indian Chart -->
+        <div class="content-section">
+            <h2 class="section-title">Birth Chart (North Indian Style)</h2>
+            <div id="northIndianChart" class="north-indian-chart"></div>
+        </div>
+
+
+        <div class="page-footer">
+            <p>{{fortune_report.company_details.report_name}}</p>
+            <div class="page-number"></div>
+        </div>
+    </div>
+
+    <!-- Wealth Report Introduction Page -->
+    <div class="page content-page">
+        <div class="page-header">
+            <h3 class="text-lg font-semibold">{{fortune_report.company_details.name}}</h3>
+        </div>
+        <div class="content-area">
+
+            <div class="mb-8">
+                <h3 class="text-xl font-semibold mb-4">Purpose of the Wealth Report</h3>
+                <p class="text-justify leading-relaxed mb-4">
+                    This personalized Wealth Report is designed to help you understand your financial potential through
+                    the lens of Vedic Astrology. By analyzing key financial indicators in your birth chart, this report
+                    provides:
+                </p>
+                <ul class="list-none space-y-2 mb-">
+                    <li class="flex items-start">
+                        <span class="text-primary mr-2">✅</span>
+                        <span>Insights into your earning potential, savings capacity, and financial challenges</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="text-primary mr-2">✅</span>
+                        <span>A scientifically calculated Wealth Score to gauge your financial standing</span>
+                    </li>
+                    <li class="flex items-start">
+                        <span class="text-primary mr-2">✅</span>
+                        <span>Astrological remedies to enhance your prosperity and wealth stability</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="mb-8">
+                <h3 class="text-xl font-semibold mb-4">How Vedic Astrology Determines Financial Success</h3>
+                <p class="text-justify leading-relaxed">
+                    Vedic astrology analyzes specific houses, planetary positions, and their relationships to predict
+                    financial potential. The 2nd house of wealth, 10th house of career, and 11th house of gains form the
+                    foundation of this analysis, complemented by the influence of wealth-signifying planets like Jupiter
+                    (abundance), Venus (luxury), Moon (liquidity), and Sun (manifestation power).
+                </p>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-xl font-semibold mb-4">Understanding Your Wealth Score</h3>
+                <p class="text-justify leading-relaxed">
+                    Your Wealth Score is calculated using a comprehensive 100-point system that evaluates five key
+                    areas: House Strengths (2nd, 10th, 11th), Dhana Yogas, and Wealth-Related Nakshatras. This
+                    scientific approach provides a clear picture of your financial potential and areas needing
+                    attention.
+                </p>
+            </div>
+        </div>
+        <div class="page-footer">
+            <p>{{fortune_report.company_details.report_name}}</p>
+            <div class="page-number"></div>
+        </div>
+    </div>
+
+    <!-- Birth Chart Analysis Page -->
+    <div class="page content-page">
+        <div class="page-header">
+            <h3 class="text-lg font-semibold">{{fortune_report.company_details.name}}</h3>
+        </div>
+        <div class="content-area">
+            <h2 class="text-2xl font-bold mb-6 text-primary">Birth Chart Analysis</h2>
+
+            <div class="mb-8">
+                <h3 class="text-xl font-semibold mb-4">Planetary Positions</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white border-collapse">
+                        <thead class="bg-accent/10">
+                            <tr>
+                                <th class="py-2 px-3 text-left text-sm font-semibold border">Planet</th>
+                                <th class="py-2 px-3 text-left text-sm font-semibold border">House</th>
+                                <th class="py-2 px-3 text-left text-sm font-semibold border">Rashi(Rashi-Lord)</th>
+                                <th class="py-2 px-3 text-left text-sm font-semibold border">Degrees</th>
+                                <th class="py-2 px-3 text-left text-sm font-semibold border">Nakshatra (Nakshatra-Lord)</th>
+                                <!-- <th class="py-2 px-3 text-left text-sm font-semibold border">Combust</th> -->
+                                <th class="py-2 px-3 text-left text-sm font-semibold border">Retro</th>
+
+                                <th class="py-2 px-3 text-left text-sm font-semibold border">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Ascendant Row -->
+                            <tr class="hover:bg-accent/5">
+                                <td class="py-2 px-3 text-sm border font-medium">Ascendant</td>
+                                <td class="py-2 px-3 text-sm border">{{kundli_data.Ascendant.house}}</td>
+                                <td class="py-2 px-3 text-sm border">{{kundli_data.Ascendant.rashi}}
+                                    ({{kundli_data.Ascendant.rashi_lord}})</td>
+                                <td class="py-2 px-3 text-sm border">{{kundli_data.Ascendant.degrees}}°</td>
+                                <td class="py-2 px-3 text-sm border">{{kundli_data.Ascendant.nakshatra}}
+                                    ({{kundli_data.Ascendant.nakshatra_lord}})</td>
+                                <!-- <td class="py-2 px-3 text-sm border">{{kundli_data.Ascendant.combust}}</td> -->
+                                <td class="py-2 px-3 text-sm border">-</td>
+                                <td class="py-2 px-3 text-sm border">-</td>
+                            </tr>
+
+                            <!-- Other Planets -->
+                            {{#with kundli_data.Sun}}
+                            <tr class="hover:bg-accent/5">
+                                <td class="py-2 px-3 text-sm border font-medium">Sun</td>
+                                <td class="py-2 px-3 text-sm border">{{house}}</td>
+                                <td class="py-2 px-3 text-sm border">{{rashi}} ({{rashi_lord}})</td>
+                                <td class="py-2 px-3 text-sm border">{{degrees}}°</td>
+                                <td class="py-2 px-3 text-sm border">{{nakshatra}} ({{nakshatra_lord}})</td>
+                                <!-- <td class="py-2 px-3 text-sm border">{{combust}}</td> -->
+                                <td class="py-2 px-3 text-sm border">{{retro}}</td>
+                                <td class="py-2 px-3 text-sm border">{{status}}</td>
+
+                            </tr>
+                            {{/with}}
+
+                            {{#with kundli_data.Moon}}
+                            <tr class="hover:bg-accent/5">
+                                <td class="py-2 px-3 text-sm border font-medium">Moon</td>
+                                <td class="py-2 px-3 text-sm border">{{house}}</td>
+                                <td class="py-2 px-3 text-sm border">{{rashi}} ({{rashi_lord}})</td>
+                                <td class="py-2 px-3 text-sm border">{{degrees}}°</td>
+                                <td class="py-2 px-3 text-sm border">{{nakshatra}} ({{nakshatra_lord}})</td>
+                                <!-- <td class="py-2 px-3 text-sm border">{{combust}}</td> -->
+                                <td class="py-2 px-3 text-sm border">{{retro}}</td> 
+                                <td class="py-2 px-3 text-sm border">{{status}}</td>
+
+                            </tr>
+                            {{/with}}
+
+                            {{#with kundli_data.Mars}}
+                            <tr class="hover:bg-accent/5">
+                                <td class="py-2 px-3 text-sm border font-medium">Mars</td>
+                                <td class="py-2 px-3 text-sm border">{{house}}</td>
+                                <td class="py-2 px-3 text-sm border">{{rashi}} ({{rashi_lord}})</td>
+                                <td class="py-2 px-3 text-sm border">{{degrees}}°</td>
+                                <td class="py-2 px-3 text-sm border">{{nakshatra}} ({{nakshatra_lord}})</td>
+                                <!-- <td class="py-2 px-3 text-sm border">{{combust}}</td> -->
+                                <td class="py-2 px-3 text-sm border">{{retro}}</td>
+                                <td class="py-2 px-3 text-sm border">{{status}}</td>
+
+                            </tr>
+                            {{/with}}
+
+                            {{#with kundli_data.Mercury}}
+                            <tr class="hover:bg-accent/5">
+                                <td class="py-2 px-3 text-sm border font-medium">Mercury</td>
+                                <td class="py-2 px-3 text-sm border">{{house}}</td>
+                                <td class="py-2 px-3 text-sm border">{{rashi}} ({{rashi_lord}})</td>
+                                <td class="py-2 px-3 text-sm border">{{degrees}}°</td>
+                                <td class="py-2 px-3 text-sm border">{{nakshatra}} ({{nakshatra_lord}})</td>
+                                <!-- <td class="py-2 px-3 text-sm border">{{combust}}</td> -->
+                                <td class="py-2 px-3 text-sm border">{{retro}}</td>
+                                <td class="py-2 px-3 text-sm border">{{status}}</td>
+
+                            </tr>
+                            {{/with}}
+
+                            {{#with kundli_data.Jupiter}}
+                            <tr class="hover:bg-accent/5">
+                                <td class="py-2 px-3 text-sm border font-medium">Jupiter</td>
+                                <td class="py-2 px-3 text-sm border">{{house}}</td>
+                                <td class="py-2 px-3 text-sm border">{{rashi}} ({{rashi_lord}})</td>
+                                <td class="py-2 px-3 text-sm border">{{degrees}}°</td>
+                                <td class="py-2 px-3 text-sm border">{{nakshatra}} ({{nakshatra_lord}})</td>
+                                <!-- <td class="py-2 px-3 text-sm border">{{combust}}</td> -->
+                                <td class="py-2 px-3 text-sm border">{{retro}}</td>
+                                <td class="py-2 px-3 text-sm border">{{status}}</td>
+
+                            </tr>
+                            {{/with}}
+
+                            {{#with kundli_data.Venus}}
+                            <tr class="hover:bg-accent/5">
+                                <td class="py-2 px-3 text-sm border font-medium">Venus</td>
+                                <td class="py-2 px-3 text-sm border">{{house}}</td>
+                                <td class="py-2 px-3 text-sm border">{{rashi}} ({{rashi_lord}})</td>
+                                <td class="py-2 px-3 text-sm border">{{degrees}}°</td>
+                                <td class="py-2 px-3 text-sm border">{{nakshatra}} ({{nakshatra_lord}})</td>
+                                <!-- <td class="py-2 px-3 text-sm border">{{combust}}</td> -->
+                                <td class="py-2 px-3 text-sm border">{{retro}}</td>
+                                <td class="py-2 px-3 text-sm border">{{status}}</td>
+
+                            </tr>
+                            {{/with}}
+
+                            {{#with kundli_data.Saturn}}
+                            <tr class="hover:bg-accent/5">
+                                <td class="py-2 px-3 text-sm border font-medium">Saturn</td>
+                                <td class="py-2 px-3 text-sm border">{{house}}</td>
+                                <td class="py-2 px-3 text-sm border">{{rashi}} ({{rashi_lord}})</td>
+                                <td class="py-2 px-3 text-sm border">{{degrees}}°</td>
+                                <td class="py-2 px-3 text-sm border">{{nakshatra}} ({{nakshatra_lord}})</td>
+                                <!-- <td class="py-2 px-3 text-sm border">{{combust}}</td> -->
+                                <td class="py-2 px-3 text-sm border">{{retro}}</td>
+                                <td class="py-2 px-3 text-sm border">{{status}}</td>
+
+                            </tr>
+                            {{/with}}
+
+                            {{#with kundli_data.Rahu}}
+                            <tr class="hover:bg-accent/5">
+                                <td class="py-2 px-3 text-sm border font-medium">Rahu</td>
+                                <td class="py-2 px-3 text-sm border">{{house}}</td>
+                                <td class="py-2 px-3 text-sm border">{{rashi}} ({{rashi_lord}})</td>
+                                <td class="py-2 px-3 text-sm border">{{degrees}}°</td>
+                                <td class="py-2 px-3 text-sm border">{{nakshatra}} ({{nakshatra_lord}})</td>
+                                <!-- <td class="py-2 px-3 text-sm border">{{combust}}</td> -->
+                                <td class="py-2 px-3 text-sm border">{{retro}}</td>
+                                <td class="py-2 px-3 text-sm border">{{status}}</td>
+
+                            </tr>
+                            {{/with}}
+
+                            {{#with kundli_data.Ketu}}
+                            <tr class="hover:bg-accent/5">
+                                <td class="py-2 px-3 text-sm border font-medium">Ketu</td>
+                                <td class="py-2 px-3 text-sm border">{{house}}</td>
+                                <td class="py-2 px-3 text-sm border">{{rashi}} ({{rashi_lord}})</td>
+                                <td class="py-2 px-3 text-sm border">{{degrees}}°</td>
+                                <td class="py-2 px-3 text-sm border">{{nakshatra}} ({{nakshatra_lord}})</td>
+                                <!-- <td class="py-2 px-3 text-sm border">{{combust}}</td> -->
+                                <td class="py-2 px-3 text-sm border">{{retro}}</td>
+                                <td class="py-2 px-3 text-sm border">{{status}}</td>
+
+                            </tr>
+                            {{/with}}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+         
+        </div>
+        <div class="page-footer">
+            <p>{{fortune_report.company_details.report_name}}</p>
+            <div class="page-number"></div>
+        </div>
+    </div>
+
+    <!-- Financial Indicators Page -->
+    <div class="page content-page">
+        <div class="page-header">
+            <h3 class="text-lg font-semibold">{{fortune_report.company_details.name}}</h3>
+        </div>
+        <div class="content-area">
+            <div class="mb-8">
+                <h3 class="text-2xl font-bold mb-6 text-primary">Current Dasha Periods</h3>
+                <table class="min-w-full bg-white border-collapse">
+                    <thead>
+                        <tr>
+                            <th class="py-2 px-3 text-sm border font-medium">Dasha</th>
+                            <th class="py-2 px-3 text-sm border font-medium">Planet</th>
+                            <th class="py-2 px-3 text-sm border font-medium">Duration</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="hover:bg-accent/5">
+                            <td class="py-2 px-3 text-sm border text-center">Mahadasha:</td>
+                            <td class="py-2 px-3 text-sm border text-center">{{user_details.mahadasha.planet}}</td>
+                            <td class="py-2 px-3 text-sm border text-center">From: {{user_details.mahadasha.start_date}}
+                                To: {{user_details.mahadasha.end_date}}</td>
+                        </tr>
+                        <tr class="hover:bg-accent/5">
+                            <td class="py-2 px-3 text-sm border text-center">Antardasha:</td>
+                            <td class="py-2 px-3 text-sm border text-center">{{user_details.antardasha.planet}}</td>
+                            <td class="py-2 px-3 text-sm border text-center">From:
+                                {{user_details.antardasha.start_date}} To: {{user_details.antardasha.end_date}}</td>
+                        </tr>
+                        <tr class="hover:bg-accent/5">
+                            <td class="py-2 px-3 text-sm border text-center">Pratyantar Dasha:</td>
+                            <td class="py-2 px-3 text-sm border text-center">{{user_details.pratyantar_dasha.planet}}
+                            </td>
+                            <td class="py-2 px-3 text-sm border text-center">From:
+                                {{user_details.pratyantar_dasha.start_date}} To:
+                                {{user_details.pratyantar_dasha.end_date}}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+
+
+
+            <h2 class="text-2xl font-bold mb-6 text-primary">Financial Indicators in Your Birth Chart</h2>
+
+            <!-- 2nd House Analysis -->
+            <div class="mb-8">
+                <h3 class="text-xl font-semibold mb-4">2nd House (Savings & Wealth Accumulation)</h3>
+                <div class="bg-accent/5 p-4 rounded-lg mb-4">
+                    <p><strong>Sign:</strong> {{financial_indicators.second_house.sign}}</p>
+                    <p><strong>Lord:</strong> {{financial_indicators.second_house.lord}}</p>
+                    <p><strong>Lord Placement:</strong> {{financial_indicators.second_house.lord_placement}}</p>
+
+                    <div class="mt-3">
+                        <p class="font-semibold">Planets:</p>
+                        <ul class="list-disc pl-6">
+                            {{#if financial_indicators.second_house.planets_placed.length}}
+                            {{#each financial_indicators.second_house.planets_placed}}
+                            <li>{{this}}</li>
+                            {{/each}}
+                            {{else}}
+                            <li>-</li>
+                            {{/if}}
+                        </ul>
+                    </div>
+
+                    <div class="mt-3 flex space-x-4">
+                        <div>
+                            <p class="font-semibold">Aspects:</p>
+                            <ul class="list-disc pl-6">
+                                {{#if financial_indicators.second_house.aspects.length}}
+                                {{#each financial_indicators.second_house.aspects}}
+                                <li>{{this}}</li>
+                                {{/each}}
+                                {{else}}
+                                <li>-</li>
+                                {{/if}}
+                            </ul>
+                        </div>
+                        <div>
+                            <p class="font-semibold">Nakshatras:</p>
+                            <ul class="list-disc pl-6">
+                                {{#if financial_indicators.second_house.nakshatras.length}}
+                                {{#each financial_indicators.second_house.nakshatras}}
+                                <li>{{this}}</li>
+                                {{/each}}
+                                {{else}}
+                                <li>-</li>
+                                {{/if}}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-justify"><strong>Inference:</strong> {{financial_indicators.second_house.inference}}</p>
+            </div>
+
+           
+        </div>
+        <div class="page-footer">
+            <p>{{fortune_report.company_details.report_name}}</p>
+            <div class="page-number"></div>
+        </div>
+    </div>
+
+    <!-- Financial Indicators Page (Continued) -->
+    <div class="page content-page">
+        <div class="page-header">
+            <h3 class="text-lg font-semibold">{{fortune_report.company_details.name}}</h3>
+        </div>
+        <div class="content-area">
+             <!-- 10th House Analysis -->
+             <div class="mb-8">
+                <h3 class="text-xl font-semibold mb-4">10th House (Career & Professional Growth)</h3>
+                <div class="bg-accent/5 p-4 rounded-lg mb-4">
+                    <p><strong>Sign:</strong> {{financial_indicators.tenth_house.sign}}</p>
+                    <p><strong>Lord:</strong> {{financial_indicators.tenth_house.lord}}</p>
+                    <p><strong>Lord Placement:</strong> {{financial_indicators.tenth_house.lord_placement}}</p>
+
+                    <div class="mt-3">
+                        <p class="font-semibold">Planets:</p>
+                        <ul class="list-disc pl-6">
+                            {{#if financial_indicators.tenth_house.planets_placed}}
+                            {{#each financial_indicators.tenth_house.planets_placed}}
+                            <li>{{this}}</li>
+                            {{/each}}
+                            {{else}}
+                            <li>-</li>
+                            {{/if}}
+                        </ul>
+                    </div>
+                    <div class="mt-3 flex space-x-4">
+
+                        <div class="mt-3">
+                            <p class="font-semibold">Aspects:</p>
+                            <ul class="list-disc pl-6">
+                                {{#if financial_indicators.tenth_house.aspects}}
+                                {{#each financial_indicators.tenth_house.aspects}}
+                                <li>{{this}}</li>
+                                {{/each}}
+                                {{else}}
+                                <li>-</li>
+                                {{/if}}
+                            </ul>
+                        </div>
+
+                        <div class="mt-3">
+                            <p class="font-semibold">Nakshatras:</p>
+                            <ul class="list-disc pl-6">
+                                {{#if financial_indicators.tenth_house.nakshatras}}
+                                {{#each financial_indicators.tenth_house.nakshatras}}
+                                <li>{{this}}</li>
+                                {{/each}}
+                                {{else}}
+                                <li>-</li>
+                                {{/if}}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-justify"><strong>Inference:</strong> {{financial_indicators.tenth_house.inference}}</p>
+            </div>
+
+          
+        </div>
+        <div class="page-footer">
+            <p>{{fortune_report.company_details.report_name}}</p>
+            <div class="page-number"></div>
+        </div>
+    </div>
+    <!-- Financial Indicators Page (Continued) -->
+    <div class="page content-page">
+        <div class="page-header">
+            <h3 class="text-lg font-semibold">{{fortune_report.company_details.name}}</h3>
+        </div>
+        <div class="content-area">
+            <!-- 11th House Analysis -->
+            <div class="mb-8">
+                <h3 class="text-xl font-semibold mb-4">11th House (Gains & Financial Expansion)</h3>
+                <div class="bg-accent/5 p-4 rounded-lg mb-4">
+                    <p><strong>Sign:</strong> {{financial_indicators.eleventh_house.sign}}</p>
+                    <p><strong>Lord:</strong> {{financial_indicators.eleventh_house.lord}}</p>
+                    <p><strong>Lord Placement:</strong> {{financial_indicators.eleventh_house.lord_placement}}</p>
+
+                    <div class="mt-3">
+                        <p class="font-semibold">Planets:</p>
+                        <ul class="list-disc pl-6">
+                            {{#each financial_indicators.eleventh_house.planets_placed}}
+                            <li>{{this}}</li>
+                            {{/each}}
+                        </ul>
+                    </div>
+
+                    <div class="mt-3">
+                        <p class="font-semibold">Aspects:</p>
+                        <ul class="list-disc pl-6">
+                            {{#each financial_indicators.eleventh_house.aspects}}
+                            <li>{{this}}</li>
+                            {{/each}}
+                        </ul>
+                    </div>
+
+                    <div class="mt-3">
+                        <p class="font-semibold">Nakshatras:</p>
+                        <ul class="list-disc pl-6">
+                            {{#each financial_indicators.eleventh_house.nakshatras}}
+                            <li>{{this}}</li>
+                            {{/each}}
+                        </ul>
+                    </div>
+                </div>
+                <p class="text-justify"><strong>Inference:</strong> {{financial_indicators.eleventh_house.inference}}
+                </p>
+            </div>
+
+          
+        </div>
+        <div class="page-footer">
+            <p>{{fortune_report.company_details.report_name}}</p>
+            <div class="page-number"></div>
+        </div>
+    </div>
+
+    <!-- Wealth Yogas Page (Continued) -->
+    <div class="page content-page">
+        <div class="page-header">
+            <h3 class="text-lg font-semibold">{{fortune_report.company_details.name}}</h3>
+        </div>
+        <div class="content-area">
+
+              <!-- Wealth Yogas Section -->
+              <h2 class="text-2xl font-bold mb-6 text-primary">Wealth-Bearing Yogas in Your Chart</h2>
+
+              <!-- Dhana Yogas -->
+              <div class="mb-8">
+                  <h3 class="text-xl font-semibold mb-4">Dhana Yogas</h3>
+                  {{#each wealth_yogas.dhana_yogas}}
+                  <div class="bg-accent/5 p-4 rounded-lg mb-4">
+                      <p><strong>Planet:</strong> {{this.planet}} in {{this.nakshatra}} (House {{this.house}})</p>
+                      <p class="mt-2"><strong>Description:</strong> {{this.description}}</p>
+                      <p class="mt-2"><strong>Inference:</strong> {{this.inference}}</p>
+                  </div>
+                  {{/each}}
+              </div>
+            <!-- Lakshmi & Raja Yoga -->
+            <div class="mb-8">
+                <h3 class="text-xl font-semibold mb-4">Lakshmi Yoga & Raja Yoga</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-accent/5 p-4 rounded-lg">
+                        <h4 class="font-semibold mb-2">Lakshmi Yoga</h4>
+                        <p><strong>Present:</strong> {{#if wealth_yogas.lakshmi_yoga.is_present}}Yes{{else}}No{{/if}}
+                        </p>
+                        <p><strong>Strength:</strong> {{wealth_yogas.lakshmi_yoga.strength}}</p>
+                        <p class="mt-2">{{wealth_yogas.lakshmi_yoga.description}}</p>
+                    </div>
+                    <div class="bg-accent/5 p-4 rounded-lg">
+                        <h4 class="font-semibold mb-2">Raja Yoga</h4>
+                        <p><strong>Present:</strong> {{#if wealth_yogas.raja_yoga.is_present}}Yes{{else}}No{{/if}}</p>
+                        <p><strong>Strength:</strong> {{wealth_yogas.raja_yoga.strength}}</p>
+                        <p class="mt-2">{{wealth_yogas.raja_yoga.description}}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Special Combinations -->
+            <div class="mb-8">
+                <h3 class="text-xl font-semibold mb-4">Special Combinations Enhancing Wealth</h3>
+                <ul class="list-disc pl-6 space-y-2">
+                    {{#each wealth_yogas.special_combinations}}
+                    <li>{{this}}</li>
+                    {{/each}}
+                </ul>
+            </div>
+        </div>
+        <div class="page-footer">
+            <p>{{fortune_report.company_details.report_name}}</p>
+            <div class="page-number"></div>
+        </div>
+    </div>
+
+    <!-- Wealth Score Page -->
+    <div class="page content-page">
+        <div class="page-header">
+            <h3 class="text-lg font-semibold">{{fortune_report.company_details.name}}</h3>
+        </div>
+        <div class="content-area">
+            <h2 class="text-2xl font-bold mb-6 text-primary text-center">Your Wealth Score & Analysis</h2>
+
+            <!-- Score Table -->
+            <div class="mb-8">
+                <div class="bg-accent/5 p-4 rounded-lg">
+                    <table class="w-full">
+                        <thead>
+                            <tr>
+                                <th class="text-left py-2">Category</th>
+                                <th class="text-right py-2">Score (Out of 20)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td class="py-2">2nd House Strength</td>
+                                <td class="text-right">{{wealth_score.second_house_strength}}</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2">10th House Strength</td>
+                                <td class="text-right">{{wealth_score.tenth_house_strength}}</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2">11th House Strength</td>
+                                <td class="text-right">{{wealth_score.eleventh_house_strength}}</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2">Dhana Yogas Strength</td>
+                                <td class="text-right">{{wealth_score.dhana_yogas_strength}}</td>
+                            </tr>
+                            <tr>
+                                <td class="py-2">Wealth Nakshatras Strength</td>
+                                <td class="text-right">{{wealth_score.wealth_nakshatras_strength}}</td>
+                            </tr>
+                            <tr class="font-bold">
+                                <td class="py-2">Total Wealth Score</td>
+                                <td class="text-right">{{wealth_score.total_score}}/100</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Score Interpretation -->
+            <div class="mb-8">
+                <h3 class="text-xl font-semibold mb-4">Your Score Interpretation</h3>
+                <p class="text-justify mb-4">{{wealth_score.interpretation}}</p>
+                <p class="text-justify mb-4">{{wealth_score.conclusion}}</p>
+            </div>
+
+            <!-- Challenges -->
+            <div class="mb-8">
+                <h3 class="text-xl font-semibold mb-4">Current Challenges</h3>
+                <ul class="list-disc pl-6 space-y-2">
+                    {{#each wealth_score.challenges}}
+                    <li>{{this}}</li>
+                    {{/each}}
+                </ul>
+            </div>
+        </div>
+        <div class="page-footer">
+            <p>{{fortune_report.company_details.report_name}}</p>
+            <div class="page-number"></div>
+        </div>
+    </div>
+
+    <!-- Remedies Page -->
+    <div class="page content-page">
+        <div class="page-header">
+            <h3 class="text-lg font-semibold">{{fortune_report.company_details.name}}</h3>
+        </div>
+        <div class="content-area">
+            <h2 class="text-2xl font-bold mb-6 text-primary">Vedic Remedies to Strengthen Wealth Potential</h2>
+
+            <!-- Planet Remedies -->
+            <div class="mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {{#each remedies.planet_remedies}}
+                    <div class="bg-accent/5 p-4 rounded-lg">
+                        <h3 class="text-xl font-semibold mb-3 text-primary">Remedies for {{this.planet}}</h3>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {{#if this.mantras.length}}
+                            <div>
+                                <h4 class="font-semibold mb-2 text-secondary">Mantras</h4>
+                                <ul class="list-disc pl-4 space-y-1 text-sm">
+                                    {{#each this.mantras}}
+                                    <li>
+                                        {{this.text}}
+                                        {{#if this.youtube_link}}<br>{{/if}}
+                                    </li>
+                                    {{/each}}
+                                </ul>
+                            </div>
+                            {{/if}}
+
+                            {{#if this.gemstones.length}}
+                            <div>
+                                <h4 class="font-semibold mb-2 text-secondary">Gemstones</h4>
+                                <ul class="list-disc pl-4 space-y-1 text-sm">
+                                    {{#each this.gemstones}}
+                                    <li>{{this}}</li>
+                                    {{/each}}
+                                </ul>
+                            </div>
+                            {{/if}}
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                            {{#if this.charity.length}}
+                            <div>
+                                <h4 class="font-semibold mb-2 text-secondary">Charity</h4>
+                                <ul class="list-disc pl-4 space-y-1 text-sm">
+                                    {{#each this.charity}}
+                                    <li>{{this}}</li>
+                                    {{/each}}
+                                </ul>
+                            </div>
+                            {{/if}}
+
+                            {{#if this.poojas.length}}
+                            <div>
+                                <h4 class="font-semibold mb-2 text-secondary">Poojas</h4>
+                                <ul class="list-disc pl-4 space-y-1 text-sm">
+                                    {{#each this.poojas}}
+                                    <li>{{this}}</li>
+                                    {{/each}}
+                                </ul>
+                            </div>
+                            {{/if}}
+                        </div>
+                    </div>
+                    {{/each}}
+                </div>
+            </div>
+
+            <!-- Behavioral Remedies -->
+            <div class="mb-8">
+                <h3 class="text-xl font-semibold mb-4 text-primary">Behavioral Remedies</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {{#each remedies.behavioral_remedies}}
+                    <div class="bg-accent/5 p-4 rounded-lg">
+                        <h4 class="font-semibold mb-2 text-secondary">{{this.type}}</h4>
+                        <ul class="list-disc pl-4 space-y-1 text-sm">
+                            {{#each this.recommendations}}
+                            <li>{{this}}</li>
+                            {{/each}}
+                        </ul>
+                    </div>
+                    {{/each}}
+                </div>
+            </div>
+        </div>
+        <div class="page-footer">
+            <p>{{fortune_report.company_details.report_name}}</p>
+            <div class="page-number"></div>
+        </div>
+    </div>
+
+    <!-- Conclusion Page -->
+    <div class="page content-page">
+        <div class="page-header">
+            <h3 class="text-lg font-semibold">{{fortune_report.company_details.name}}</h3>
+        </div>
+        <div class="content-area">
+            <h2 class="text-2xl font-bold mb-6 text-primary text-center">Why This Wealth Report Is Valuable</h2>
+
+            <div class="space-y-4 mb-8">
+                <div class="flex items-start">
+                    <span class="text-primary mr-2">✅</span>
+                    <p><strong>Personalized Wealth Insights:</strong> Based on your unique birth chart and Vedic
+                        astrological principles</p>
+                </div>
+                <div class="flex items-start">
+                    <span class="text-primary mr-2">✅</span>
+                    <p><strong>Scientific Wealth Score:</strong> A comprehensive 100-point evaluation system</p>
+                </div>
+                <div class="flex items-start">
+                    <span class="text-primary mr-2">✅</span>
+                    <p><strong>Clear Actionable Remedies:</strong> Specific steps to enhance your financial prosperity
+                    </p>
+                </div>
+                <div class="flex items-start">
+                    <span class="text-primary mr-2">✅</span>
+                    <p><strong>Strengths & Weaknesses:</strong> Detailed analysis for better financial planning</p>
+                </div>
+                <div class="flex items-start">
+                    <span class="text-primary mr-2">✅</span>
+                    <p><strong>Career & Investment Guidance:</strong> Astrologically aligned financial decisions</p>
+                </div>
+            </div>
+
+            <div class="text-center mb-8">
+                <p class="italic text-gray-600">"May this report guide you towards abundant prosperity and financial
+                    wisdom."</p>
+            </div>
+
+            <div class="text-center">
+                <p class="mb-4">With Divine Blessings,</p>
+                <p class="font-semibold text-lg">{{fortune_report.company_details.astrologer_name}}</p>
+                <p class="text-sm text-gray-600">{{fortune_report.company_details.name}}</p>
+            </div>
+        </div>
+        <div class="page-footer">
+            <p>{{fortune_report.company_details.report_name}}</p>
+            <div class="page-number"></div>
+        </div>
+    </div>
+
+
+    <!-- Last Page -->
+    <div class="page content-page last-page">
+        <div class="decorative-border"></div>
+        <div class="content-area">
+            <div class="company-header">
+                <h1 class="company-title">{{fortune_report.company_details.name}}</h1>
+                <p class="company-subtitle">{{fortune_report.company_details.slogan}}</p>
+            </div>
+
+            <div class="social-media-section">
+                <h2 class="text-2xl font-bold mb-6" style="color: var(--color-primary);">Connect With Us</h2>
+
+                <div class="social-links">
+                    {{#if fortune_report.company_details.social_media.facebook.url}}
+                    <a href="{{fortune_report.company_details.social_media.facebook.url}}" class="social-link">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236b9080'%3E%3Cpath d='M22.675 0h-21.35c-0.731 0-1.325 0.594-1.325 1.325v21.351c0 0.73 0.594 1.324 1.325 1.324h11.495v-9.294h-3.128v-3.622h3.128v-2.671c0-3.1 1.893-4.788 4.659-4.788 1.325 0 2.464 0.099 2.796 0.144v3.24l-1.919 0.001c-1.504 0-1.795 0.715-1.795 1.764v2.31h3.59l-0.467 3.622h-3.123v9.293h6.124c0.73 0 1.324-0.594 1.324-1.324v-21.35c0-0.731-0.594-1.325-1.324-1.325z'/%3E%3C/svg%3E"
+                            alt="Facebook" class="social-icon">
+                        <span>Facebook</span>
+                    </a>
+                    {{/if}}
+
+                    {{#if fortune_report.company_details.social_media.twitter.url}}
+                    <a href="{{fortune_report.company_details.social_media.twitter.url}}" class="social-link">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236b9080'%3E%3Cpath d='M19.828 0h-15.656c-2.3 0-4.172 1.872-4.172 4.172v15.656c0 2.3 1.872 4.172 4.172 4.172h15.656c2.3 0 4.172-1.872 4.172-4.172v-15.656c0-2.3-1.872-4.172-4.172-4.172zm-3.971 17.82l-2.814-3.776-2.787 3.776h-2.594l4.008-5.308-3.779-5.055h2.614l2.582 3.572 2.499-3.572h2.492l-3.747 4.974 4.073 5.389h-2.547z'/%3E%3C/svg%3E"
+                            alt="X" class="social-icon">
+                        <span>X</span>
+                    </a>
+                    {{/if}}
+
+                    {{#if fortune_report.company_details.social_media.instagram.url}}
+                    <a href="{{fortune_report.company_details.social_media.instagram.url}}" class="social-link">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236b9080'%3E%3Cpath d='M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919 0.058 1.265 0.069 1.645 0.069 4.849 0 3.205-0.012 3.584-0.069 4.849-0.149 3.225-0.149-1.664 4.771-4.919-1.266 0.058-1.644 0.07-4.85 0.07-3.204 0-3.584-0.012-4.849-0.07-3.26-0.149-4.771-1.699-4.919-4.92-0.058-1.265-0.07-1.644-0.07-4.849 0-3.204 0.013-3.583 0.07-4.849 0.149-3.227 1.664-4.771 4.919-4.919 1.266-0.057 1.645-0.069 4.849-0.069zm0-2.163c-3.259 0-3.667 0.014-4.947 0.072-4.358 0.2-6.78 2.618-6.98 6.98-0.059 1.281-0.073 1.689-0.073 4.948 0 3.259 0.014 3.668 0.072 4.948 0.2 4.358 2.618 6.78 6.98 6.98 1.281 0.058 1.689 0.073 4.948 0.073 3.259 0 3.668-0.014 4.948-0.072 4.354-0.2 6.782-2.618 6.979-6.98 0.059-1.28 0.073-1.689 0.073-4.948 0-3.259-0.014-3.667-0.072-4.947-0.196-4.354-2.617-6.78-6.979-6.98-1.281-0.059-1.69-0.073-4.949-0.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4z'/%3E%3C/svg%3E"
+                            alt="Instagram" class="social-icon">
+                        <span>Instagram</span>
+                    </a>
+                    {{/if}}
+
+                    {{#if fortune_report.company_details.social_media.linkedin.url}}
+                    <a href="{{fortune_report.company_details.social_media.linkedin.url}}" class="social-link">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%236b9080'%3E%3Cpath d='M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z'/%3E%3C/svg%3E"
+                            alt="LinkedIn" class="social-icon">
+                        <span>LinkedIn</span>
+                    </a>
+                    {{/if}}
+                </div>
+
+                <div class="contact-info">
+                    <h3 class="text-xl mb-3" style="color: var(--color-primary);">Get in Touch</h3>
+                    <p class="text-lg">{{fortune_report.company_details.email}}</p>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="page-footer">
+            <p>{{fortune_report.company_details.report_name}}</p>
+            <div class="page-number"></div>
+        </div>
+    </div>
+    <script>
+        function createStars() {
+            const starsContainer = document.createElement('div');
+            starsContainer.id = 'stars';
+            starsContainer.style.position = 'fixed';
+            starsContainer.style.top = '0';
+            starsContainer.style.left = '0';
+            starsContainer.style.width = '100%';
+            starsContainer.style.height = '100%';
+            starsContainer.style.zIndex = '0';
+            document.body.appendChild(starsContainer);
+
+            // Create more stars for a denser effect
+            for (let i = 0; i < 200; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = `${Math.random() * 100}%`;
+                star.style.top = `${Math.random() * 100}%`;
+                star.style.animationDelay = `${Math.random() * 1.5}s`;
+                // Vary star sizes
+                star.style.transform = `scale(${Math.random() * 0.8 + 0.2})`;
+                // Add different animation durations
+                star.style.animationDuration = `${1 + Math.random()}s`;
+                starsContainer.appendChild(star);
+            }
+        }
+
+        // Create subtle floating effect for content
+        function addFloatingEffect() {
+            const contentWrappers = document.querySelectorAll('.content-wrapper');
+            contentWrappers.forEach(wrapper => {
+                wrapper.style.animation = 'float 6s ease-in-out infinite';
+            });
+        }
+
+        // Add smooth scroll behavior
+        function addSmoothScroll() {
+            document.documentElement.style.scrollBehavior = 'smooth';
+        }
+
+        // Function to get planet abbreviation
+        function getAbbreviation(name) {
+            const abbreviations = {
+                Sun: "Su", Moon: "Mo", Mars: "Ma", Mercury: "Me",
+                Jupiter: "Ju", Venus: "Ve", Saturn: "Sa", Rahu: "Ra", Ketu: "Ke",
+                Neptune: "Ne", Uranus: "Ura", Pluto: "Plu"
+            };
+            return abbreviations[name] || name;
+        }
+
+        // Function to capitalize first letter
+        function capitalize(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
+        }
+
+        // Function to get planets in a specific house
+        function getPlanetsInHouse(data, houseNum) {
+            const planets = [];
+            Object.entries(data.kundli).forEach(([planet, info]) => {
+                if (planet !== 'Ascendant' && info.house === houseNum) {
+                    planets.push(getAbbreviation(planet));
+                }
+            });
+            return planets.join('\n');
+        }
+
+        // Function to render North Indian Chart
+        function renderNorthIndianChart(data) {
+            const chartContainer = document.getElementById('northIndianChart');
+            if (!chartContainer || !data.kundli) return;
+
+            // Clear previous content
+            chartContainer.innerHTML = '';
+
+            // Add SVG for chart lines
+            chartContainer.innerHTML = `
+              <svg viewBox="0 0 100 100" style="position: absolute; width: 100%; height: 100%;">
+                <rect x="0" y="0" width="100" height="100" fill="none" stroke="#A8CABA" stroke-width="1.2" />
+                <path d="M 50 0 L 100 50 L 50 100 L 0 50 Z" fill="none" stroke="#A8CABA" stroke-width="1" />
+                <line x1="0" y1="0" x2="100" y2="100" stroke="#BFD8D5" stroke-width="0.8" />
+                <line x1="100" y1="0" x2="0" y2="100" stroke="#BFD8D5" stroke-width="0.8" />
+              </svg>
+            `;
+
+            const zodiacSignsArray = [
+                "Aries", "Taurus", "Gemini", "Cancer", "Leo", "Virgo",
+                "Libra", "Scorpio", "Sagittarius", "Capricorn", "Aquarius", "Pisces",
+                "Neptune", "Uranus", "Pluto"
+            ];
+
+            const getZodiacNumber = (sign) => zodiacSignsArray.indexOf(capitalize(sign)) + 1;
+            const ascendantNumber = getZodiacNumber(data.kundli.Ascendant.rashi);
+
+            // Generate house sequence starting from the ascendant
+            const houseOrder = Array.from({ length: 12 }, (_, i) => ((ascendantNumber + i - 1) % 12) + 1);
+
+            const positions = [
+                { top: "25%", left: "50%" }, { top: "16%", left: "25%" }, { top: "34%", left: "6%" },
+                { top: "43%", left: "25%" }, { top: "75%", left: "5%" }, { top: "92%", left: "25%" },
+                { top: "70%", left: "50%" }, { top: "92%", left: "75%" }, { top: "72%", left: "95%" },
+                { top: "40%", left: "75%" }, { top: "24%", left: "95%" }, { top: "18%", left: "75%" }
+            ];
+
+            houseOrder.forEach((houseNum, i) => {
+                const position = positions[i];
+                const isAscendant = data.kundli.Ascendant.house === houseNum;
+                const planets = getPlanetsInHouse(data, houseNum);
+
+                const houseDiv = document.createElement('div');
+                houseDiv.className = 'chart-house';
+                houseDiv.style.top = position.top;
+                houseDiv.style.left = position.left;
+
+                houseDiv.innerHTML = `
+                    <div class="house-number">${houseNum}</div>
+                    ${isAscendant ? '<div class="ascendant">As</div>' : ''}
+                    <div class="planet-sign mt-1">${planets}</div>
+                `;
+
+                chartContainer.appendChild(houseDiv);
+            });
+        }
+
+        // Function to fetch kundli data and render chart
+        async function fetchAndRenderKundliChart() {
+            try {
+                const response = await fetch('https://astrophi-backend.onrender.com/generate_kundli', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        // date_of_birth: "1990-03-06",
+                        // time_of_birth: "01:00",
+                        // latitude: 25.17,
+                        // longitude: 75.84
+                        date_of_birth: "{{user_details.dob}}",
+                        time_of_birth: "{{user_details.time_of_birth}}",
+                        latitude: "{{{user_details.latitude}}}",  // Triple braces for numbers
+                        longitude: "{{{user_details.longitude}}}"  // Triple braces for numbers
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch kundli data');
+                }
+
+                const data = await response.json();
+                if (data.success === false) {
+                    throw new Error(data.error || 'Failed to generate kundli');
+                }
+                renderNorthIndianChart(data);
+            } catch (error) {
+                console.error('Error fetching kundli data:', error);
+                document.getElementById('northIndianChart').innerHTML = 'Failed to load chart';
+            }
+        }
+
+        // Initialize all effects when document loads
+        document.addEventListener('DOMContentLoaded', () => {
+            createStars();
+            addFloatingEffect();
+            addSmoothScroll();
+            fetchAndRenderKundliChart();
+        });
+
+        // Add floating animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes float {
+                0%, 100% { transform: translateY(0); }
+                50% { transform: translateY(-10px); }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+
+</html>

@@ -130,6 +130,13 @@ def calculate_planetary_states(planet, rashi, degrees_in_rashi, speed, sun_posit
         status = "Exalted" if rashi == "Pisces" else "Debilitated" if rashi == "Virgo" else "Neutral"
     elif planet == 'Saturn':
         status = "Exalted" if rashi == "Libra" else "Debilitated" if rashi == "Aries" else "Neutral"
+    # Add rules for new planets
+    elif planet == 'Neptune':
+        status = "Exalted" if rashi == "Pisces" else "Debilitated" if rashi == "Virgo" else "Neutral"
+    elif planet == 'Uranus':
+        status = "Exalted" if rashi == "Aquarius" else "Debilitated" if rashi == "Leo" else "Neutral"
+    elif planet == 'Pluto':
+        status = "Exalted" if rashi == "Scorpio" else "Debilitated" if rashi == "Taurus" else "Neutral"
 
     return {'retro': retro, 'combust': combust, 'status': status}
 
@@ -279,12 +286,17 @@ def calculate_extended_planetary_info(julian_day, lat, lon):
             'retro': states['retro'],
             'combust': states['combust'],
             'status': states['status']
+            
         }
 
     planet_mappings = [
         ('Sun', swe.SUN), ('Moon', swe.MOON), ('Mars', swe.MARS),
         ('Mercury', swe.MERCURY), ('Venus', swe.VENUS), 
-        ('Jupiter', swe.JUPITER), ('Saturn', swe.SATURN)
+        ('Jupiter', swe.JUPITER), ('Saturn', swe.SATURN),
+        # Add these new planets
+        ('Neptune', swe.NEPTUNE),
+        ('Uranus', swe.URANUS),
+        ('Pluto', swe.PLUTO)
     ]
 
     for planet, planet_num in planet_mappings:

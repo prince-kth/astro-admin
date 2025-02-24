@@ -11,30 +11,9 @@ Handlebars.registerHelper('times', function(n, block) {
   return accum;
 });
 
-// Template mapping for different report types
-const TEMPLATE_MAPPING = {
-  "Chakra Healing Report": "report-chakra-healing.html",
-  "Fortune Report": "report-yearly-fortune.html",
-  "Lucky 13 Reports": "report-lucky-13.html",
-  "Vedic 4 Report": "report-vedic-4.html",
-  "Wealth Comprehensive Report": "report-wealth-comprehensive.html",
-  "Wealth Report": "report-wealth.html",
-  "Yogas & Doshas": "report-yogas-and-doshas.html"
-} as const;
-
 export const generatePDF = async (data: any): Promise<Uint8Array> => {
-    // Get the report type and find corresponding template
-    const reportType = data.fortune_report?.company_details?.report_name;
-    if (!reportType) {
-        console.warn('Report type not found in data, using default template');
-    }
-    
-    // Get template name, fallback to default if not found
-    const templateFile = reportType ? TEMPLATE_MAPPING[reportType] || 'report.html' : 'report.html';
-    console.log(`Using template: ${templateFile} for report type: ${reportType}`);
-    
-    // Read and compile the HTML template from selected folder
-    const templatePath = path.join(process.cwd(), 'pdfTempplates', 'selected', templateFile);
+    // Read and compile the HTML template
+    const templatePath = path.join(process.cwd(), 'pdfTempplates', 'report.html');
     const templateContent = fs.readFileSync(templatePath, 'utf-8');
     const template = Handlebars.compile(templateContent);
 

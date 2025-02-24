@@ -84,9 +84,9 @@ export async function POST(req: NextRequest) {
         `,
         schema: z.object({
           introduction: z.object({
-            purpose: z.string().min(200, "The purpose section should be at least 200 characters long"),
-            methodology: z.string().min(200, "The methodology section should be at least 200 characters long"),
-            vedic_astrology_principles: z.array(z.string()).min(5, "At least five vedic astrology principle is required")
+            purpose: z.string(),
+            methodology: z.string(),
+            vedic_astrology_principles: z.array(z.string())
           }),
           client_info: z.object({
             name: z.string(),
@@ -172,17 +172,17 @@ export async function POST(req: NextRequest) {
             })
           }),
           wealth_score: z.object({
-            total_score: z.number().describe("Overall wealth potential score out of 100, calculated by analyzing planetary positions, divisional charts, and yogas"),
+            total_score: z.number(),
             category_scores: z.array(z.object({
-              category: z.string().describe("Category of wealth analysis (e.g., 'Planetary Strength', 'House Analysis', 'Yogas', 'Divisional Charts', 'Dasha Impact')"),
-              weightage: z.number().describe("Importance of this category in overall wealth calculation (sum of all weightages = 100)"),
-              score: z.number().describe("Score out of 20 for this category based on detailed analysis of kundli_data.kundli"),
-              interpretation: z.string().describe("Detailed interpretation explaining the score based on specific planetary positions and aspects from kundli_data.kundli")
-            })).describe("Detailed breakdown of wealth potential across different astrological factors, with Mars exalted in 10th house and Moon exalted in 2nd house being particularly significant"),
+              category: z.string(),
+              weightage: z.number(),
+              score: z.number(),
+              interpretation: z.string()
+            })),
             interpretation: z.object({
-              tier: z.string().describe("Wealth potential tier (e.g., 'Exceptional', 'Strong', 'Moderate', 'Challenging') based on total_score"),
-              description: z.string().describe("Comprehensive analysis of wealth potential considering exalted Mars in 10th (career), exalted Moon in 2nd (wealth), Jupiter's position in 9th (fortune), and key divisional chart placements"),
-              potential: z.string().describe("Future wealth trajectory based on current planetary positions and upcoming dashas")
+              tier: z.string(),
+              description: z.string(),
+              potential: z.string()
             })
           }),
           remedies: z.object({
