@@ -22,9 +22,12 @@ const TEMPLATE_MAPPING = {
   "Yogas & Doshas": "report-yogas-and-doshas.html"
 } as const;
 
-export const generatePDF = async (data: any): Promise<Uint8Array> => {
+// Define the valid report types
+type ReportType = keyof typeof TEMPLATE_MAPPING;
+
+export const generatePDF = async (data: { fortune_report?: { company_details?: { report_name?: string } } }): Promise<Uint8Array> => {
     // Get the report type and find corresponding template
-    const reportType = data.fortune_report?.company_details?.report_name;
+    const reportType = data.fortune_report?.company_details?.report_name as ReportType | undefined;
     if (!reportType) {
         console.warn('Report type not found in data, using default template');
     }
