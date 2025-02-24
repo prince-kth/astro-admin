@@ -6,9 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "postinstall": "npm install --force",
-    "fix-missing": "./fix-missing.sh"
+    "lint": "next lint"
+
   },
   "dependencies": {
     "@ai-sdk/openai": "^1.1.11",
