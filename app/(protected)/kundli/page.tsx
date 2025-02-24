@@ -626,7 +626,7 @@ export default function Home() {
                 <Card className="text-center p-6">
                   <CardHeader>
                     <CardTitle>Selected Report: {selectedReport}</CardTitle>
-                    <CardDescription>{REPORT_METADATA[selectedReport].description}</CardDescription>
+                    <CardDescription>{selectedReport ? REPORT_METADATA[selectedReport].description : ''}</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <Button
@@ -676,7 +676,7 @@ export default function Home() {
                   <CardHeader className="flex flex-row items-center justify-between">
                     <div>
                       <CardTitle>Selected: {selectedReport}</CardTitle>
-                      <CardDescription>{REPORT_METADATA[selectedReport!].description}</CardDescription>
+                      <CardDescription>{selectedReport ? REPORT_METADATA[selectedReport].description : ''}</CardDescription>
                     </div>
                     <Button
                       variant="ghost"
