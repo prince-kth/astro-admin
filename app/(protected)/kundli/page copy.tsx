@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useState, useCallback, useEffect } from "react"
-import { User, Building2, FileText, Loader2, Star, Sparkles, Coins, Wallet, ScrollText, Circle, HandCoins, Search } from "lucide-react"
+import { User, Building2, FileText, Loader2, Star, Sparkles, Coins, Wallet, ScrollText, Circle, HandCoins } from "lucide-react"
 import { Toaster, toast } from 'sonner'
 import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -140,18 +140,7 @@ export default function Home() {
     message: ""
   });
   const [selectedReport, setSelectedReport] = useState<typeof REPORT_TYPES[number] | null>(null);
-  const [step, setStep] = useState<'select-report' | 'user-type' | 'existing-user' | 'form'>('select-report');
-  const [previousStep, setPreviousStep] = useState<'user-type' | 'existing-user'>('user-type');
-
-  // Add state for existing users
-  const [existingUsers, setExistingUsers] = useState<Array<{ phoneNumber: string; name: string }>>([]);
-  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-
-  const filteredUsers = existingUsers.filter(user => 
-    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.phoneNumber.includes(searchQuery)
-  );
+  const [step, setStep] = useState<'select-report' | 'user-type' | 'form'>('select-report');
 
   const form = useForm<KundliFormValues>({
     resolver: zodResolver(kundliFormSchema),
@@ -314,55 +303,6 @@ export default function Home() {
         maximumAge: 0
       }
     );
-  };
-
-  // Function to fetch existing users
-  const fetchExistingUsers = async () => {
-    setIsLoadingUsers(true);
-    try {
-      const response = await fetch('/api/users/list', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-      const data = await response.json();
-      setExistingUsers(data.users);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      toast.error('Failed to fetch existing users');
-    } finally {
-      setIsLoadingUsers(false);
-    }
-  };
-
-  // Function to fetch user details by phone number
-  const fetchUserDetails = async (phoneNumber: string) => {
-    try {
-      const response = await fetch(`/api/users/${phoneNumber}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-      const data = await response.json();
-      
-      // Auto-fill form with user data
-      form.setValue("firstName", data.firstName);
-      form.setValue("lastName", data.lastName);
-      form.setValue("phoneNumber", data.phoneNumber);
-      form.setValue("email", data.email);
-      form.setValue("dateOfBirth", data.dateOfBirth);
-      form.setValue("timeOfBirth", data.timeOfBirth);
-      form.setValue("birthPlace", data.birthPlace);
-      form.setValue("latitude", data.latitude);
-      form.setValue("longitude", data.longitude);
-      
-      setStep('form');
-    } catch (error) {
-      console.error('Error fetching user details:', error);
-      toast.error('Failed to fetch user details');
-    }
   };
 
   // Enhanced loading messages with more mystical tone
@@ -705,8 +645,7 @@ export default function Home() {
                       className="w-full"
                       variant="outline"
                       onClick={() => {
-                        fetchExistingUsers();
-                        setStep('existing-user');
+                        toast.info("Existing user flow - Coming soon!");
                       }}
                     >
                       Existing User
@@ -726,85 +665,6 @@ export default function Home() {
               </motion.div>
             )}
 
-            {step === 'existing-user' && (
-              <motion.div
-                className="max-w-md mx-auto space-y-6"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-              >
-                <Card className="p-6">
-                  <CardHeader>
-                    <CardTitle>Select Existing User</CardTitle>
-                    <CardDescription>Choose from your saved profiles</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {isLoadingUsers ? (
-                      <div className="flex items-center justify-center py-8">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                      </div>
-                    ) : existingUsers.length > 0 ? (
-                      <div className="space-y-4">
-                        <div className="relative">
-                          <Input
-                            placeholder="Search by name or phone number..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10"
-                          />
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        </div>
-                        <div className="space-y-2 max-h-[400px] overflow-y-auto rounded-md border bg-popover p-1">
-                          {filteredUsers.map((user) => (
-                            <div
-                              key={user.phoneNumber}
-                              className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-3 outline-none hover:bg-accent hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
-                              onClick={() => {
-                                fetchUserDetails(user.phoneNumber);
-                                setPreviousStep('existing-user');
-                                setStep('form');
-                              }}
-                            >
-                              <div className="flex items-center gap-3 flex-1 min-w-0">
-                                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                                  <User className="h-4 w-4 text-primary" />
-                                </div>
-                                <div className="flex flex-col overflow-hidden">
-                                  <span className="text-sm font-medium leading-none truncate">{user.name}</span>
-                                  <span className="text-sm text-muted-foreground truncate">{user.phoneNumber}</span>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                          {filteredUsers.length === 0 && (
-                            <div className="text-center py-6 text-sm text-muted-foreground">
-                              No users found
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 text-muted-foreground">
-                        No existing users found
-                      </div>
-                    )}
-                    <div className="pt-4 border-t">
-                      <Button
-                        className="w-full"
-                        variant="ghost"
-                        onClick={() => {
-                          setSearchQuery("");
-                          setStep('user-type');
-                        }}
-                      >
-                        Back
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            )}
-
             {step === 'form' && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -813,26 +673,17 @@ export default function Home() {
                 className="max-w-3xl mx-auto"
               >
                 <Card className="mb-4">
-                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardHeader className="flex flex-row items-center justify-between">
                     <div>
                       <CardTitle>Selected: {selectedReport}</CardTitle>
                       <CardDescription>{selectedReport ? REPORT_METADATA[selectedReport].description : ''}</CardDescription>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        onClick={() => setStep(previousStep)}
-                        className="flex items-center gap-2"
-                      >
-                        Back
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => setStep('select-report')}
-                      >
-                        Change Report
-                      </Button>
-                    </div>
+                    <Button
+                      variant="ghost"
+                      onClick={() => setStep('select-report')}
+                    >
+                      Change Report
+                    </Button>
                   </CardHeader>
                 </Card>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="flex-1 flex flex-col min-h-0">
@@ -890,27 +741,6 @@ export default function Home() {
                           </CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                          {/* {existingUsers.length > 0 && (
-                            <div className="space-y-1">
-                              <Label htmlFor="existingUser">Select Existing User</Label>
-                              <Select onValueChange={(phoneNumber) => fetchUserDetails(phoneNumber)}>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="Choose an existing user" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {existingUsers.map((user) => (
-                                    <SelectItem key={user.phoneNumber} value={user.phoneNumber}>
-                                      {user.name} ({user.phoneNumber})
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <p className="text-xs text-muted-foreground mt-1">
-                                Or fill in the details manually below
-                              </p>
-                            </div>
-                          )} */}
-
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <div className="space-y-1">
                               <Label htmlFor="firstName">First Name</Label>
