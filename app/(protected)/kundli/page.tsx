@@ -381,7 +381,7 @@ export default function Home() {
         message: loadingMessages[0]
       });
 
-      const response = await fetch('https://astrophi-backend.onrender.com/generate_kundli', {
+      const response = await fetch(process.env.NEXT_PUBLIC_GENERATE_KUNDLI_URL as string, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
