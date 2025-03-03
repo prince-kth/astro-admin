@@ -72,6 +72,8 @@ import {
   FileSpreadsheet,
   Search,
   LayoutGrid,
+  Pencil,
+  Ban
 } from "lucide-react";
 import { DateRange } from "react-day-picker";
 import { CalendarIcon } from "lucide-react";
@@ -82,9 +84,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Skeleton } from "@/components/ui/skeleton";
+import { User } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -98,124 +102,81 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 
-type User = {
+interface ApiUser {
   id: number;
   name: string;
   email: string;
-  package: "Basic" | "Premium";
-  createdAt: string;
-  walletBalance: number;
-  mobileNumber: string;
+  phoneNumber: string;
   countryCode: string;
+  package: string;
+  walletBalance: number;
   city: string;
   country: string;
-  status: "Active" | "Inactive" | "Blocked";
-};
-
-const initialUsers: User[] = [
-  { 
-    id: 1, 
-    name: "John Doe", 
-    email: "john@example.com", 
-    package: "Premium",
-    createdAt: "2024-02-15T10:30:00",
-    walletBalance: 1250.75,
-    mobileNumber: "9234567890",
-    countryCode: "+91",
-    city: "New York",
-    country: "USA",
-    status: "Active"
-  },
-  { 
-    id: 2, 
-    name: "Jane Smith", 
-    email: "jane@example.com", 
-    package: "Basic",
-    createdAt: "2024-02-16T15:45:00",
-    walletBalance: 450.25,
-    mobileNumber: "8876543210",
-    countryCode: "+91",
-    city: "Los Angeles",
-    country: "USA",
-    status: "Active"
-  },
-  { 
-    id: 3, 
-    name: "Bob Johnson", 
-    email: "bob@example.com", 
-    package: "Premium",
-    createdAt: "2024-02-17T09:20:00",
-    walletBalance: 2800.50,
-    mobileNumber: "9551234567",
-    countryCode: "+91",
-    city: "Chicago",
-    country: "USA",
-    status: "Active"
-  },
-  {
-    id: 4,
-    name: "Sarah Johnson",
-    email: "sarah@example.com",
-    package: "Premium",
-    createdAt: "2024-02-18T14:10:00",
-    walletBalance: 2300.25,
-    mobileNumber: "9988776655",
-    countryCode: "+91",
-    city: "Miami",
-    country: "USA",
-    status: "Active"
-    
-  },
-  {
-    id: 5,
-    name: "David Brown",
-    email: "david@example.com",
-    package: "Basic",
-    createdAt: "2024-02-19T10:50:00",
-    walletBalance: 1500.50,
-    mobileNumber: "8877665544",
-    countryCode: "+91",
-    city: "Houston",
-    country: "USA",
-    status: "Active"
-    
-  },
-  {
-    id: 6,
-    name: "Emily Davis",
-    email: "emily@example.com",
-    package: "Basic",
-    createdAt: "2024-02-20T12:30:00",
-    walletBalance: 1000.75,
-    mobileNumber: "9998887777",
-    countryCode: "+91",
-    city: "Phoenix",
-    country: "USA",
-    status: "Active"
-    
-  }
-]
-
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString);
-  return new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  }).format(date);
+  status: string;
+  dateOfBirth: string;
+  timeOfBirth: string;
+  birthPlace: string;
+  latitude: number;
+  longitude: number;
+  createdAt: string;
+  updatedAt: string;
+  _count?: {
+    reports: number;
+    transactions: number;
+  };
 }
 
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  phoneNumber: string;
+  countryCode: string;
+  package: "Basic" | "Premium";
+  walletBalance: number;
+  city: string;
+  country: string;
+  status: "Active" | "Blocked";
+  dateOfBirth: string;
+  timeOfBirth: string;
+  birthPlace: string;
+  latitude: number;
+  longitude: number;
+  createdAt: string;
+  updatedAt: string;
+  _count?: {
+    reports: number;
+    transactions: number;
+  };
+}
+
+// Loading row component for table
+const LoadingRow = () => (
+  <TableRow>
+    <TableCell><Skeleton className="h-4 w-4" /></TableCell>
+    <TableCell><Skeleton className="h-4 w-8" /></TableCell>
+    <TableCell><Skeleton className="h-4 w-[120px]" /></TableCell>
+    <TableCell><Skeleton className="h-4 w-[180px]" /></TableCell>
+    <TableCell><Skeleton className="h-6 w-[80px]" /></TableCell>
+    <TableCell><Skeleton className="h-6 w-[80px]" /></TableCell>
+    <TableCell><Skeleton className="h-4 w-[120px]" /></TableCell>
+    <TableCell><Skeleton className="h-4 w-[150px]" /></TableCell>
+    <TableCell><Skeleton className="h-4 w-[80px]" /></TableCell>
+    <TableCell><Skeleton className="h-4 w-[120px]" /></TableCell>
+    <TableCell><Skeleton className="h-8 w-8" /></TableCell>
+  </TableRow>
+);
+
 export default function UsersPage() {
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({});
   const [rowSelection, setRowSelection] = useState({});
-  const [users, setUsers] = useState<User[]>(initialUsers);
   const [searchQuery, setSearchQuery] = useState("");
   const [packageFilter, setPackageFilter] = useState("all");
-  const [isLoading, setIsLoading] = useState(false);
   const [date, setDate] = useState<DateRange | undefined>({
     from: undefined,
     to: undefined,
@@ -227,6 +188,7 @@ export default function UsersPage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
   const itemsPerPage = 10;
   const indexOfFirstItem = (currentPage - 1) * itemsPerPage;
   const currentItems = users;
@@ -234,14 +196,91 @@ export default function UsersPage() {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    phoneNumber: "",
+    countryCode: "+91",
     package: "Basic" as "Basic" | "Premium",
     walletBalance: 0,
-    mobileNumber: "",
-    countryCode: "+91",
     city: "",
     country: "",
-    status: "Active" as "Active" | "Inactive" | "Blocked"
+    status: "Active" as "Active" | "Blocked",
+    dateOfBirth: "",
+    timeOfBirth: "",
+    birthPlace: "",
+    latitude: 0,
+    longitude: 0
   });
+
+  const [isAddEditOpen, setIsAddEditOpen] = useState(false);
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch('/api/users/list');
+      const data = await response.json();
+      
+      if (response.ok) {
+        const mappedUsers = data.map((user: ApiUser) => {
+          // Validate package type
+          if (user.package !== 'Basic' && user.package !== 'Premium') {
+            throw new Error(`Invalid package type: ${user.package}`);
+          }
+          // Validate status
+          if (user.status !== 'Active' && user.status !== 'Blocked') {
+            throw new Error(`Invalid status: ${user.status}`);
+          }
+          
+          return {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            phoneNumber: user.phoneNumber,
+            countryCode: user.countryCode,
+            package: user.package as "Basic" | "Premium",
+            walletBalance: user.walletBalance,
+            city: user.city,
+            country: user.country,
+            status: user.status as "Active" | "Blocked",
+            dateOfBirth: user.dateOfBirth,
+            timeOfBirth: user.timeOfBirth,
+            birthPlace: user.birthPlace,
+            latitude: user.latitude,
+            longitude: user.longitude,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+            _count: user._count
+          } as User;
+        });
+        
+        setUsers(mappedUsers);
+      } else {
+        setError(data.error || 'Failed to fetch users');
+        toast.error(data.error || 'Failed to fetch users');
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      setError('Failed to fetch users');
+      toast.error('Failed to fetch users');
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
+  }
 
   const columns: ColumnDef<User>[] = [
     {
@@ -277,9 +316,9 @@ export default function UsersPage() {
       accessorKey: "name",
       cell: ({ row }) => (
         <div className="flex items-center gap-3">
-          {/* <Avatar className="bg-gradient-to-br from-purple-500/80 to-blue-500/80">
-            <AvatarFallback>{row.getValue("name").slice(0, 2).toUpperCase()}</AvatarFallback>
-          </Avatar> */}
+          <Avatar className="bg-gradient-to-br from-purple-500/80 to-blue-500/80">
+            <AvatarFallback>{(row.getValue("name") as string).slice(0, 2).toUpperCase()}</AvatarFallback>
+          </Avatar>
           <div className="font-medium">{row.getValue("name")}</div>
         </div>
       ),
@@ -307,10 +346,7 @@ export default function UsersPage() {
       accessorKey: "status",
       cell: ({ row }) => (
         <Badge 
-          variant={
-            row.getValue("status") === "Active" ? "default" :
-            row.getValue("status") === "Inactive" ? "secondary" : "destructive"
-          }
+          variant={row.getValue("status") === "Active" ? "default" : "destructive"}
         >
           {row.getValue("status")}
         </Badge>
@@ -318,9 +354,9 @@ export default function UsersPage() {
     },
     {
       header: "Phone",
-      accessorKey: "mobileNumber",
+      accessorKey: "phoneNumber",
       cell: ({ row }) => (
-        <div>{row.original.countryCode} {row.getValue("mobileNumber")}</div>
+        <div>{row.original.countryCode} {row.original.phoneNumber}</div>
       ),
     },
     {
@@ -335,9 +371,10 @@ export default function UsersPage() {
       accessorKey: "walletBalance",
       cell: ({ row }) => {
         const amount = parseFloat(row.getValue("walletBalance"));
-        const formatted = new Intl.NumberFormat("en-US", {
+        const formatted = new Intl.NumberFormat("en-IN", {
           style: "currency",
-          currency: "USD",
+          currency: "INR",
+          maximumFractionDigits: 2
         }).format(amount);
         return formatted;
       },
@@ -365,7 +402,7 @@ export default function UsersPage() {
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => {
                 setSelectedUser(user);
-                setIsDrawerOpen(true);
+                setIsDialogOpen(true);
               }}>
                 <Eye className="mr-2 h-4 w-4" /> View Details
               </DropdownMenuItem>
@@ -386,23 +423,25 @@ export default function UsersPage() {
     },
   ];
 
-  const filterUsers = useCallback(() => {
-    let filtered = [...initialUsers];
+  const filteredUsers = useMemo(() => {
+    let filtered = [...users];
 
     // Search filter
     if (searchQuery) {
-      filtered = filtered.filter(user =>
-        user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.package.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.status.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.mobileNumber.includes(searchQuery) ||
-        user.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        user.country.toLowerCase().includes(searchQuery.toLowerCase())
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(user => 
+        user.name.toLowerCase().includes(query) ||
+        user.email.toLowerCase().includes(query) ||
+        user.phoneNumber.includes(query)
       );
     }
 
-    // Date range filter
+    // Package filter
+    if (packageFilter !== "all") {
+      filtered = filtered.filter(user => user.package === packageFilter);
+    }
+
+    // Date filter
     if (date?.from || date?.to) {
       filtered = filtered.filter(user => {
         const userDate = new Date(user.createdAt);
@@ -417,15 +456,11 @@ export default function UsersPage() {
       });
     }
 
-    setUsers(filtered);
-  }, [searchQuery, date, initialUsers]);
-
-  useEffect(() => {
-    filterUsers();
-  }, [filterUsers]);
+    return filtered;
+  }, [users, searchQuery, packageFilter, date]);
 
   const table = useReactTable({
-    data: users,
+    data: filteredUsers,
     columns,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
@@ -463,72 +498,58 @@ export default function UsersPage() {
       toast.error("Please enter a valid email address")
       return
     }
-    if (!formData.package) {
-      toast.error("Please select a package")
+    if (!formData.phoneNumber.trim()) {
+      toast.error("Please enter a phone number")
+      return
+    }
+    if (!formData.dateOfBirth) {
+      toast.error("Please enter date of birth")
+      return
+    }
+    if (!formData.timeOfBirth) {
+      toast.error("Please enter time of birth")
+      return
+    }
+    if (!formData.birthPlace) {
+      toast.error("Please enter birth place")
       return
     }
 
     try {
       setIsLoading(true)
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const endpoint = editingUser ? `/api/users/${editingUser.id}` : '/api/users/create';
+      const method = editingUser ? 'PUT' : 'POST';
+      
+      const response = await fetch(endpoint, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to save user');
+      }
 
       if (editingUser) {
-        // Check if email already exists (except for current user)
-        const emailExists = users.some(user => 
-          user.email === formData.email && user.id !== editingUser.id
-        )
-        if (emailExists) {
-          toast.error("A user with this email already exists")
-          return
-        }
-
-        // Edit existing user
         setUsers(users.map(user => 
           user.id === editingUser.id 
-            ? {
-                ...user,
-                name: formData.name.trim(),
-                email: formData.email.trim(),
-                package: formData.package,
-                walletBalance: formData.walletBalance,
-                mobileNumber: formData.mobileNumber,
-                countryCode: formData.countryCode,
-                city: formData.city,
-                country: formData.country,
-                status: formData.status
-              }
+            ? { ...user, ...formData } as User
             : user
         ))
         toast.success("User updated successfully")
       } else {
-        // Check if email already exists
-        if (users.some(user => user.email === formData.email)) {
-          toast.error("A user with this email already exists")
-          return
-        }
-
-        // Add new user
-        const newUser: User = {
-          id: users.length + 1,
-          name: formData.name.trim(),
-          email: formData.email.trim(),
-          package: formData.package,
-          createdAt: new Date().toISOString(),
-          walletBalance: formData.walletBalance,
-          mobileNumber: formData.mobileNumber,
-          countryCode: formData.countryCode,
-          city: formData.city,
-          country: formData.country,
-          status: formData.status
-        }
-        setUsers([...users, newUser])
+        setUsers([...users, data as User])
         toast.success("User added successfully")
       }
       
       handleCloseDialog()
     } catch (error) {
-      toast.error("An error occurred")
+      console.error('Error saving user:', error);
+      toast.error(error instanceof Error ? error.message : "An error occurred")
     } finally {
       setIsLoading(false)
     }
@@ -562,35 +583,47 @@ export default function UsersPage() {
   }
 
   const handleEdit = (user: User) => {
-    setEditingUser(user)
+    setSelectedUser(user);
     setFormData({
-      name: user.name,
-      email: user.email,
-      package: user.package,
-      walletBalance: user.walletBalance,
-      mobileNumber: user.mobileNumber,
-      countryCode: user.countryCode,
-      city: user.city,
-      country: user.country,
-      status: user.status
-    })
-    setIsDialogOpen(true)
+      name: user.name || "",
+      email: user.email || "",
+      phoneNumber: user.phoneNumber || "",
+      countryCode: user.countryCode || "+91",
+      package: user.package || "Basic",
+      walletBalance: user.walletBalance || 0,
+      city: user.city || "",
+      country: user.country || "",
+      status: user.status || "Active",
+      dateOfBirth: user.dateOfBirth || "",
+      timeOfBirth: user.timeOfBirth || "",
+      birthPlace: user.birthPlace || "",
+      latitude: user.latitude || 0,
+      longitude: user.longitude || 0
+    });
+    setIsDialogOpen(false);
+    setIsAddEditOpen(true);
+    setEditingUser(user);
   }
 
   const handleCloseDialog = () => {
-    setIsDialogOpen(false)
-    setEditingUser(null)
+    setIsAddEditOpen(false);
+    setEditingUser(null);
     setFormData({
       name: "",
       email: "",
+      phoneNumber: "",
+      countryCode: "+91",
       package: "Basic",
       walletBalance: 0,
-      mobileNumber: "",
-      countryCode: "+91",
       city: "",
       country: "",
-      status: "Active"
-    })
+      status: "Active",
+      dateOfBirth: "",
+      timeOfBirth: "",
+      birthPlace: "",
+      latitude: 0,
+      longitude: 0
+    });
   }
 
   const refreshData = async () => {
@@ -598,7 +631,8 @@ export default function UsersPage() {
       setIsLoading(true)
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000))
-      setUsers(initialUsers)
+      setUsers([]);
+      fetchUsers();
       toast.success("Data refreshed")
     } catch (error) {
       toast.error("Failed to refresh data")
@@ -627,7 +661,7 @@ export default function UsersPage() {
         Email: user.email,
         Package: user.package,
         Status: user.status,
-        Phone: `${user.countryCode} ${user.mobileNumber}`,
+        Phone: `${user.countryCode} ${user.phoneNumber}`,
         Location: `${user.city}, ${user.country}`,
         Balance: `$${user.walletBalance.toFixed(2)}`,
         'Created At': formatDate(user.createdAt)
@@ -665,7 +699,56 @@ export default function UsersPage() {
 
   const handleSearch = (value: string) => {
     setSearchQuery(value);
-    filterUsers();
+  };
+
+  const handleBulkOperation = async (operation: 'activate' | 'block' | 'upgrade' | 'downgrade' | 'delete', userIds: number[]) => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/users/bulk', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ operation, userIds }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to perform bulk operation');
+      }
+
+      // Update local state based on operation
+      const updatedUsers = users.map(user => {
+        if (userIds.includes(user.id)) {
+          switch (operation) {
+            case 'activate':
+              return { ...user, status: 'Active' as const };
+            case 'block':
+              return { ...user, status: 'Blocked' as const };
+            case 'upgrade':
+              return { ...user, package: 'Premium' as const };
+            case 'downgrade':
+              return { ...user, package: 'Basic' as const };
+            default:
+              return user;
+          }
+        }
+        return user;
+      });
+
+      setUsers(operation === 'delete' 
+        ? users.filter(user => !userIds.includes(user.id))
+        : updatedUsers
+      );
+
+      toast.success(`Successfully ${operation}ed ${data.count} users`);
+    } catch (error) {
+      console.error('Error performing bulk operation:', error);
+      toast.error(error instanceof Error ? error.message : 'Failed to perform operation');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -752,7 +835,7 @@ export default function UsersPage() {
                     checked={column.getIsVisible()}
                     onCheckedChange={(value) => column.toggleVisibility(!!value)}
                   >
-                    {column.id === "mobileNumber" ? "Phone" : 
+                    {column.id === "phoneNumber" ? "Phone" : 
                      column.id === "createdAt" ? "Created At" : 
                      column.id}
                   </DropdownMenuCheckboxItem>
@@ -762,7 +845,7 @@ export default function UsersPage() {
           </DropdownMenu>
 
           <Button
-            onClick={() => setIsDialogOpen(true)}
+            onClick={() => setIsAddEditOpen(true)}
             size="sm"
             className="h-9 bg-blue-600 hover:bg-blue-700"
           >
@@ -816,12 +899,47 @@ export default function UsersPage() {
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
+          {loading ? (
+    <>
+      {[...Array(5)].map((_, index) => (
+        <LoadingRow key={`loading-${index}`} />
+      ))}
+    </>
+  ) : error ? (
+              <TableRow>
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center text-gray-500"
+                >
+                  {error}
+                </TableCell>
+              </TableRow>
+            ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className="border-b transition-colors hover:bg-gray-50"
+                  className="cursor-pointer hover:bg-gray-50"
+                  onClick={() => {
+                    setSelectedUser(row.original);
+                    setIsDialogOpen(true);
+                    setFormData({
+                      name: row.original.name,
+                      email: row.original.email,
+                      phoneNumber: row.original.phoneNumber,
+                      countryCode: row.original.countryCode || '+91',
+                      package: row.original.package,
+                      walletBalance: row.original.walletBalance,
+                      city: row.original.city,
+                      country: row.original.country,
+                      status: row.original.status,
+                      dateOfBirth: row.original.dateOfBirth,
+                      timeOfBirth: row.original.timeOfBirth,
+                      birthPlace: row.original.birthPlace,
+                      latitude: row.original.latitude,
+                      longitude: row.original.longitude
+                    });
+                  }}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell 
@@ -851,6 +969,13 @@ export default function UsersPage() {
                   className="h-24 text-center text-gray-500"
                 >
                   No results found.
+                </TableCell>
+              </TableRow>
+            )}
+            {loading && (
+              <TableRow>
+                <TableCell colSpan={columns.length}>
+                  <LoadingRow />
                 </TableCell>
               </TableRow>
             )}
@@ -981,6 +1106,282 @@ export default function UsersPage() {
         </DialogContent>
       </Dialog>
 
+      {/* User Details Dialog */}
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>User Details</DialogTitle>
+            <DialogDescription>
+              View and manage user information
+            </DialogDescription>
+          </DialogHeader>
+          {selectedUser && (
+            <div className="space-y-6">
+              <div className="flex items-center space-x-4">
+                <Avatar className="h-12 w-12">
+                  <AvatarFallback className="bg-primary">
+                    {selectedUser.name.split(' ').map(n => n[0]).join('')}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <h3 className="text-lg font-semibold">{selectedUser.name}</h3>
+                  <p className="text-sm text-muted-foreground">{selectedUser.email}</p>
+                </div>
+              </div>
+
+              <div className="grid gap-4">
+                <div className="grid gap-2">
+                  <Label>Phone Number</Label>
+                  <div className="flex items-center space-x-2">
+                    <Badge variant="outline">{selectedUser.countryCode}</Badge>
+                    <span>{selectedUser.phoneNumber}</span>
+                  </div>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label>Package</Label>
+                  <Badge variant={selectedUser.package === 'Premium' ? 'default' : 'secondary'}>
+                    {selectedUser.package}
+                  </Badge>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label>Status</Label>
+                  <Badge variant={selectedUser.status === 'Active' ? 'default' : 'destructive'}>
+                    {selectedUser.status}
+                  </Badge>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label>Location</Label>
+                  <div className="text-sm">
+                    {selectedUser.city}, {selectedUser.country}
+                  </div>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label>Balance</Label>
+                  <div className="text-sm font-medium">
+                    ₹{selectedUser.walletBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </div>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label>Created At</Label>
+                  <div className="text-sm">
+                    {format(new Date(selectedUser.createdAt), 'PPpp')}
+                  </div>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label>Birth Details</Label>
+                  <div className="text-sm">
+                    <p>Date: {format(new Date(selectedUser.dateOfBirth), 'PPP')}</p>
+                    <p>Time: {selectedUser.timeOfBirth}</p>
+                    <p>Place: {selectedUser.birthPlace}</p>
+                    <p>Coordinates: {selectedUser.latitude}, {selectedUser.longitude}</p>
+                  </div>
+                </div>
+              </div>
+
+              <DialogFooter className="flex gap-2 justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsDialogOpen(false)}
+                >
+                  Close
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    setIsDialogOpen(false);
+                    setIsAddEditOpen(true);
+                  }}
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Edit User
+                </Button>
+                {selectedUser.status !== 'Blocked' && (
+                  <Button 
+                    variant="destructive"
+                    onClick={() => {
+                      // Handle block user
+                      toast.error('User blocked successfully');
+                      setIsDialogOpen(false);
+                    }}
+                  >
+                    <Ban className="h-4 w-4 mr-2" />
+                    Block User
+                  </Button>
+                )}
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Add/Edit User Dialog */}
+      <Dialog open={isAddEditOpen} onOpenChange={setIsAddEditOpen}>
+        <DialogContent className="flex flex-col gap-0 p-0 sm:max-h-[min(640px,80vh)] sm:max-w-lg [&>button:last-child]:top-3.5">
+          <DialogHeader className="contents space-y-0 text-left">
+            <DialogTitle className="border-b px-6 py-4 text-base">
+              {editingUser ? "Edit User" : "Add New User"}
+            </DialogTitle>
+            <div className="overflow-y-auto">
+              <div className="px-6 py-4">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>Name</Label>
+                    <Input
+                      placeholder="Enter name"
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Email</Label>
+                    <Input
+                      type="email"
+                      placeholder="Enter email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Package</Label>
+                    <Select value={formData.package} onValueChange={(value: "Basic" | "Premium") => setFormData({ ...formData, package: value })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Basic">Basic</SelectItem>
+                        <SelectItem value="Premium">Premium</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Wallet Balance</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="Enter wallet balance"
+                      value={formData.walletBalance}
+                      onChange={(e) => setFormData({ ...formData, walletBalance: parseFloat(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Phone Number</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        placeholder="Enter country code"
+                        value={formData.countryCode}
+                        onChange={(e) => setFormData({ ...formData, countryCode: e.target.value })}
+                        className="w-[100px]"
+                      />
+                      <Input
+                        type="tel"
+                        placeholder="Enter phone number"
+                        value={formData.phoneNumber}
+                        onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+                        className="flex-1"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Date of Birth</Label>
+                    <Input
+                      type="date"
+                      value={formData.dateOfBirth}
+                      onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Time of Birth</Label>
+                    <Input
+                      type="time"
+                      value={formData.timeOfBirth}
+                      onChange={(e) => setFormData({ ...formData, timeOfBirth: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Birth Place</Label>
+                    <Input
+                      placeholder="Enter birth place"
+                      value={formData.birthPlace}
+                      onChange={(e) => setFormData({ ...formData, birthPlace: e.target.value })}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Latitude</Label>
+                      <Input
+                        type="number"
+                        step="any"
+                        placeholder="Enter latitude"
+                        value={formData.latitude}
+                        onChange={(e) => setFormData({ ...formData, latitude: parseFloat(e.target.value) || 0 })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Longitude</Label>
+                      <Input
+                        type="number"
+                        step="any"
+                        placeholder="Enter longitude"
+                        value={formData.longitude}
+                        onChange={(e) => setFormData({ ...formData, longitude: parseFloat(e.target.value) || 0 })}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>City</Label>
+                    <Input
+                      placeholder="Enter city"
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Country</Label>
+                    <Input
+                      placeholder="Enter country"
+                      value={formData.country}
+                      onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Status</Label>
+                    <Select value={formData.status} onValueChange={(value: "Active" | "Blocked") => setFormData({ ...formData, status: value })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Active">Active</SelectItem>
+                        <SelectItem value="Blocked">Blocked</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter className="px-6 pb-6">
+                <Button variant="outline" onClick={handleCloseDialog}>Cancel</Button>
+                <Button onClick={handleAddEdit} disabled={isLoading}>
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      {editingUser ? "Updating..." : "Adding..."}
+                    </>
+                  ) : (
+                    <>{editingUser ? "Update User" : "Add User"}</>
+                  )}
+                </Button>
+              </DialogFooter>
+            </div>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+
       {/* User Details Drawer */}
       <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
         <SheetContent className="sm:max-w-xl">
@@ -1018,10 +1419,7 @@ export default function UsersPage() {
                       <Label>Status</Label>
                       <div className="mt-1">
                         <Badge 
-                          variant={
-                            selectedUser.status === "Active" ? "default" :
-                            selectedUser.status === "Inactive" ? "secondary" : "destructive"
-                          }
+                          variant={selectedUser.status === "Active" ? "default" : "destructive"}
                         >
                           {selectedUser.status}
                         </Badge>
@@ -1035,7 +1433,7 @@ export default function UsersPage() {
                   <div className="mt-2 grid grid-cols-2 gap-4">
                     <div>
                       <Label>Phone Number</Label>
-                      <div className="mt-1 text-sm">{selectedUser.countryCode} {selectedUser.mobileNumber}</div>
+                      <div className="mt-1 text-sm">{selectedUser.countryCode} {selectedUser.phoneNumber}</div>
                     </div>
                     <div>
                       <Label>City</Label>
@@ -1087,123 +1485,6 @@ export default function UsersPage() {
           )}
         </SheetContent>
       </Sheet>
-
-      {/* Add/Edit User Dialog */}
-      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="flex flex-col gap-0 p-0 sm:max-h-[min(640px,80vh)] sm:max-w-lg [&>button:last-child]:top-3.5">
-          <DialogHeader className="contents space-y-0 text-left">
-            <DialogTitle className="border-b px-6 py-4 text-base">
-              {editingUser ? "Edit User" : "Add New User"}
-            </DialogTitle>
-            <div className="overflow-y-auto">
-              <div className="px-6 py-4">
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>Name</Label>
-                    <Input
-                      placeholder="Enter name"
-                      value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Email</Label>
-                    <Input
-                      type="email"
-                      placeholder="Enter email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Package</Label>
-                    <Select value={formData.package} onValueChange={(value: "Basic" | "Premium") => setFormData({ ...formData, package: value })}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Basic">Basic</SelectItem>
-                        <SelectItem value="Premium">Premium</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Wallet Balance</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="Enter wallet balance"
-                      value={formData.walletBalance}
-                      onChange={(e) => setFormData({ ...formData, walletBalance: parseFloat(e.target.value) || 0 })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Mobile Number</Label>
-                    <Input
-                      type="tel"
-                      placeholder="Enter mobile number"
-                      value={formData.mobileNumber}
-                      onChange={(e) => setFormData({ ...formData, mobileNumber: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Country Code</Label>
-                    <Input
-                      type="tel"
-                      placeholder="Enter country code"
-                      value={formData.countryCode}
-                      onChange={(e) => setFormData({ ...formData, countryCode: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>City</Label>
-                    <Input
-                      placeholder="Enter city"
-                      value={formData.city}
-                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Country</Label>
-                    <Input
-                      placeholder="Enter country"
-                      value={formData.country}
-                      onChange={(e) => setFormData({ ...formData, country: e.target.value })}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Status</Label>
-                    <Select value={formData.status} onValueChange={(value: "Active" | "Inactive" | "Blocked") => setFormData({ ...formData, status: value })}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Active">Active</SelectItem>
-                        <SelectItem value="Inactive">Inactive</SelectItem>
-                        <SelectItem value="Blocked">Blocked</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-              <DialogFooter className="px-6 pb-6">
-                <Button variant="outline" onClick={handleCloseDialog}>Cancel</Button>
-                <Button onClick={handleAddEdit} disabled={isLoading}>
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {editingUser ? "Updating..." : "Adding..."}
-                    </>
-                  ) : (
-                    <>{editingUser ? "Update User" : "Add User"}</>
-                  )}
-                </Button>
-              </DialogFooter>
-            </div>
-          </DialogHeader>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

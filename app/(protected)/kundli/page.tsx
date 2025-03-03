@@ -13,6 +13,7 @@ import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { motion } from "framer-motion"
+import { useRouter } from "next/navigation"
 
 // Debounce utility function
 function debounce<T extends (...args: any[]) => any>(
@@ -59,43 +60,50 @@ const REPORT_METADATA = {
     icon: Circle,
     description: "Discover your energy centers and healing potential",
     color: "from-purple-500/20 to-pink-500/20",
-    borderColor: "hover:border-purple-500/50"
+    borderColor: "hover:border-purple-500/50",
+    price: 499
   },
   "Fortune Report": {
     icon: Sparkles,
     description: "Unveil your destiny and future prospects",
     color: "from-yellow-500/20 to-orange-500/20",
-    borderColor: "hover:border-yellow-500/50"
+    borderColor: "hover:border-yellow-500/50",
+    price: 999
   },
   "Lucky 13 Reports": {
     icon: Star,
     description: "Explore your 13 key lucky elements",
     color: "from-green-500/20 to-emerald-500/20",
-    borderColor: "hover:border-green-500/50"
+    borderColor: "hover:border-green-500/50",
+    price: 1299
   },
   "Vedic 4 Report": {
     icon: HandCoins,
     description: "Traditional Vedic astrology insights",
     color: "from-blue-500/20 to-indigo-500/20",
-    borderColor: "hover:border-blue-500/50"
+    borderColor: "hover:border-blue-500/50",
+    price: 799
   },
   "Wealth Comprehensive Report": {
     icon: Coins,
     description: "Detailed analysis of wealth potential",
     color: "from-amber-500/20 to-yellow-500/20",
-    borderColor: "hover:border-amber-500/50"
+    borderColor: "hover:border-amber-500/50",
+    price: 1499
   },
   "Wealth Report": {
     icon: Wallet,
     description: "Quick overview of financial prospects",
     color: "from-emerald-500/20 to-green-500/20",
-    borderColor: "hover:border-emerald-500/50"
+    borderColor: "hover:border-emerald-500/50",
+    price: 699
   },
   "Yogas & Doshas": {
     icon: ScrollText,
     description: "Analysis of astrological combinations",
     color: "from-red-500/20 to-rose-500/20",
-    borderColor: "hover:border-red-500/50"
+    borderColor: "hover:border-red-500/50",
+    price: 899
   }
 } as const;
 
@@ -128,7 +136,32 @@ const kundliFormSchema = z.object({
 
 type KundliFormValues = z.infer<typeof kundliFormSchema>;
 
+type User = {
+  id: number;
+  name: string;
+  email: string;
+  phoneNumber: string;
+  countryCode: string;
+  package: "Basic" | "Premium";
+  walletBalance: number;
+  city: string;
+  country: string;
+  status: "Active" | "Blocked";
+  dateOfBirth: string;
+  timeOfBirth: string;
+  birthPlace: string;
+  latitude: number;
+  longitude: number;
+  createdAt: string;
+  updatedAt: string;
+  _count?: {
+    reports: number;
+    transactions: number;
+  };
+};
+
 export default function Home() {
+  const router = useRouter();
   const [locationSuggestions, setLocationSuggestions] = useState<LocationSuggestion[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
@@ -140,13 +173,61 @@ export default function Home() {
     message: ""
   });
   const [selectedReport, setSelectedReport] = useState<typeof REPORT_TYPES[number] | null>(null);
-  const [step, setStep] = useState<'select-report' | 'user-type' | 'existing-user' | 'form'>('select-report');
-  const [previousStep, setPreviousStep] = useState<'user-type' | 'existing-user'>('user-type');
+  const [step, setStep] = useState<'user-type' | 'existing-user' | 'select-report' | 'form'>('user-type');
+  const [previousStep, setPreviousStep] = useState<'user-type' | 'existing-user' | 'select-report'>('user-type');
 
   // Add state for existing users
-  const [existingUsers, setExistingUsers] = useState<Array<{ phoneNumber: string; name: string }>>([]);
+  const [existingUsers, setExistingUsers] = useState<Array<User>>([]);
   const [isLoadingUsers, setIsLoadingUsers] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      setIsLoadingUsers(true);
+      const response = await fetch('/api/users/list');
+      const data = await response.json();
+      
+      if (response.ok) {
+        // The API returns the users array directly, not wrapped in a users object
+        setExistingUsers(data.map((user: any) => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          phoneNumber: user.phoneNumber,
+          countryCode: user.countryCode,
+          package: user.package,
+          walletBalance: user.walletBalance,
+          city: user.city,
+          country: user.country,
+          status: user.status,
+          dateOfBirth: user.dateOfBirth,
+          timeOfBirth: user.timeOfBirth,
+          birthPlace: user.birthPlace,
+          latitude: user.latitude,
+          longitude: user.longitude,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          _count: user._count,
+          reports: user._count?.reports || 0,
+          transactions: user._count?.transactions || 0
+        })));
+      } else {
+        const errorMessage = data.error || 'Failed to fetch users';
+        console.error('Error response:', data);
+        toast.error(errorMessage);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast.error('Failed to fetch users');
+    } finally {
+      setIsLoadingUsers(false);
+    }
+  };
 
   const filteredUsers = existingUsers.filter(user => 
     user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -316,69 +397,30 @@ export default function Home() {
     );
   };
 
-  // Function to fetch existing users
-  const fetchExistingUsers = async () => {
-    setIsLoadingUsers(true);
-    try {
-      const response = await fetch('/api/users/list', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-      const data = await response.json();
-      setExistingUsers(data.users);
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      toast.error('Failed to fetch existing users');
-    } finally {
-      setIsLoadingUsers(false);
-    }
+  // Handle user selection
+  const handleUserSelect = (user: User) => {
+    setSelectedUser(user);
+    form.reset({
+      ...form.getValues(),
+      phoneNumber: user.phoneNumber,
+      firstName: user.name.split(' ')[0],
+      lastName: user.name.split(' ').slice(1).join(' '),
+      email: user.email,
+      dateOfBirth: user.dateOfBirth,
+      timeOfBirth: user.timeOfBirth,
+      birthPlace: user.birthPlace,
+      latitude: user.latitude.toString(),
+      longitude: user.longitude.toString()
+    });
+    setStep('select-report');
   };
-
-  // Function to fetch user details by phone number
-  const fetchUserDetails = async (phoneNumber: string) => {
-    try {
-      const response = await fetch(`/api/users/${phoneNumber}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-      const data = await response.json();
-      
-      // Auto-fill form with user data
-      form.setValue("firstName", data.firstName);
-      form.setValue("lastName", data.lastName);
-      form.setValue("phoneNumber", data.phoneNumber);
-      form.setValue("email", data.email);
-      form.setValue("dateOfBirth", data.dateOfBirth);
-      form.setValue("timeOfBirth", data.timeOfBirth);
-      form.setValue("birthPlace", data.birthPlace);
-      form.setValue("latitude", data.latitude);
-      form.setValue("longitude", data.longitude);
-      
-      setStep('form');
-    } catch (error) {
-      console.error('Error fetching user details:', error);
-      toast.error('Failed to fetch user details');
-    }
-  };
-
-  // Enhanced loading messages with more mystical tone
-  const loadingMessages = [
-    "Connecting with celestial energies...",
-    "Mapping the cosmic alignments of your birth moment...",
-    "Channeling ancient astrological wisdom...",
-    "Crafting your personalized cosmic blueprint..."
-  ];
 
   const generateKundli = async () => {
     try {
       setLoadingState({
         isLoading: true,
         step: 0,
-        message: loadingMessages[0]
+        message: "Connecting with celestial energies..."
       });
 
       const response = await fetch(process.env.NEXT_PUBLIC_GENERATE_KUNDLI_URL as string, {
@@ -409,7 +451,7 @@ export default function Home() {
       setLoadingState({
         isLoading: true,
         step: 2,
-        message: loadingMessages[2]
+        message: "Channeling ancient astrological wisdom..."
       });
 
       // Log the kundliData to check what we received from generate_kundli
@@ -457,7 +499,7 @@ export default function Home() {
       setLoadingState({
         isLoading: true,
         step: 3,
-        message: loadingMessages[3]
+        message: "Crafting your personalized cosmic blueprint..."
       });
 
       // Use the previously declared selectedReportType
@@ -530,11 +572,13 @@ export default function Home() {
             Astrological Reports
           </h1>
           <p className="text-sm text-muted-foreground max-w-md mx-auto">
-            {step === 'select-report'
-              ? "Choose from our collection of mystical reports to unveil your cosmic destiny"
-              : step === 'user-type'
-                ? "Tell us about yourself to begin your astrological journey"
-                : "Fill in your details for an accurate reading"}
+            {step === 'user-type'
+              ? "Let's start by finding out if you're a new or existing user"
+              : step === 'existing-user'
+                ? "Search for your existing details"
+                : step === 'select-report'
+                  ? "Choose from our collection of mystical reports to unveil your cosmic destiny"
+                  : "Fill in your details for an accurate reading"}
           </p>
         </div>
 
@@ -584,6 +628,114 @@ export default function Home() {
           </Card>
         ) : (
           <div className="container mx-auto max-w-7xl">
+            {step === 'user-type' && (
+              <motion.div
+                className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                <Card
+                  className="relative overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-50"
+                  onClick={() => {
+                    router.push('/users');
+                  }}
+                >
+                  <CardHeader>
+                    <User className="w-12 h-12 text-primary mb-4" />
+                    <CardTitle>New User</CardTitle>
+                    <CardDescription>First time getting an astrological report? Start here!</CardDescription>
+                  </CardHeader>
+                </Card>
+
+                <Card
+                  className="relative overflow-hidden cursor-pointer hover:shadow-lg transition-all duration-100"
+                  onClick={() => {
+                    setPreviousStep('user-type');
+                    setStep('existing-user');
+                  }}
+                >
+                  <CardHeader>
+                    <Search className="w-12 h-12 text-primary mb-4" />
+                    <CardTitle>Existing User</CardTitle>
+                    <CardDescription>Already have your details with us? Find them here!</CardDescription>
+                  </CardHeader>
+                </Card>
+              </motion.div>
+            )}
+
+            {step === 'existing-user' && (
+              <motion.div
+                className="max-w-2xl mx-auto"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+              >
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Find Your Details</CardTitle>
+                    <CardDescription>Search by name or phone number</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex gap-2">
+                        <Input
+                          placeholder="Search by name or phone number"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="flex-1"
+                        />
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setStep('user-type');
+                            setSearchQuery('');
+                          }}
+                        >
+                          Back
+                        </Button>
+                      </div>
+
+                      <div className="space-y-2">
+                        {isLoadingUsers ? (
+                          <div className="text-center py-4">
+                            <Loader2 className="w-6 h-6 animate-spin mx-auto" />
+                            <p className="text-sm text-muted-foreground mt-2">Loading users...</p>
+                          </div>
+                        ) : filteredUsers.length > 0 ? (
+                          filteredUsers.map((user) => (
+                            <Card
+                              key={user.id}
+                              className="cursor-pointer hover:bg-muted/50 transition-colors"
+                              onClick={() => {
+                                handleUserSelect(user);
+                                setPreviousStep('existing-user');
+                                setStep('select-report');
+                              }}
+                            >
+                              <CardHeader className="p-4">
+                                <div className="flex items-start justify-between">
+                                  <div>
+                                    <CardTitle className="text-base">{user.name}</CardTitle>
+                                    <CardDescription>{user.phoneNumber}</CardDescription>
+                                  </div>
+                                  <Button variant="ghost" size="icon">
+                                    <User className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </CardHeader>
+                            </Card>
+                          ))
+                        ) : searchQuery ? (
+                          <p className="text-center text-muted-foreground py-4">No users found</p>
+                        ) : null}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            )}
+
             {step === 'select-report' && (
               <motion.div
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
@@ -593,14 +745,24 @@ export default function Home() {
               >
                 {REPORT_TYPES.map((reportType) => {
                   const metadata = REPORT_METADATA[reportType];
+                  const canAfford = selectedUser && selectedUser.walletBalance >= metadata.price;
                   return (
                     <motion.div
                       key={reportType}
-                      whileHover={{ scale: 1.05, y: -5 }}
-                      whileTap={{ scale: 0.98 }}
+                      whileHover={canAfford ? { scale: 1.05, y: -5 } : {}}
+                      whileTap={canAfford ? { scale: 0.98 } : {}}
                       onClick={() => {
-                        setSelectedReport(reportType);
-                        setStep('user-type');
+                        if (!selectedUser) {
+                          toast.error('Please select a user first');
+                          setStep('user-type');
+                          return;
+                        }
+                        if (canAfford) {
+                          setSelectedReport(reportType);
+                          setStep('form');
+                        } else {
+                          toast.error(`Insufficient balance. Available: ₹${selectedUser.walletBalance.toFixed(2)}`);
+                        }
                       }}
                       style={{
                         '--bg-image': `url('/assets/${reportType.toLowerCase().replace(/\s+/g, '-')}.png')`
@@ -616,7 +778,7 @@ export default function Home() {
                         border 
                         border-white/10 
                         transition-all 
-                        duration-500
+                        duration-200
                         ${metadata.borderColor}
                         flex 
                         flex-col 
@@ -635,7 +797,7 @@ export default function Home() {
                         before:opacity-20
                         before:mix-blend-overlay
                         before:transition-all
-                        before:duration-500
+                        before:duration-200
                         hover:before:opacity-40
                         hover:before:scale-110
                         after:absolute
@@ -646,162 +808,43 @@ export default function Home() {
                         after:to-black/40
                         after:opacity-70
                         after:transition-opacity
-                        after:duration-500
+                        after:duration-200
                         hover:after:opacity-60
+                        ${!canAfford ? 'opacity-50 cursor-not-allowed hover:scale-100' : ''}
                       `}
                     >
-                      <div className="
-                        relative z-10
-                        p-4 
-                        rounded-full 
-                        bg-white/10 
-                        backdrop-blur-sm
-                        ring-1
-                        ring-white/20
-                        shadow-lg
-                        transition-transform
-                        duration-500
-                        group-hover:scale-110
-                        group-hover:ring-white/30
-                      ">
-                        <metadata.icon className="w-10 h-10 transition-colors duration-500 text-white/80 group-hover:text-white" />
+                      <div className="relative z-10 p-4 rounded-full bg-white/10 backdrop-blur-sm ring-1 ring-white/20 shadow-lg transition-transform duration-500 group-hover:scale-110 group-hover:ring-white/30">
+                        <metadata.icon className="w-10 h-10 transition-colors duration-200 text-white/80 group-hover:text-white" />
                       </div>
                       <div className="relative z-10 space-y-2">
                         <h3 className="text-xl font-semibold tracking-tight text-white group-hover:text-white/90">{reportType}</h3>
-                        <p className="text-sm text-white/70 group-hover:text-white/80 transition-colors duration-500">{metadata.description}</p>
+                        <p className="text-sm text-white/70 group-hover:text-white/80 transition-colors duration-200">{metadata.description}</p>
+                        <div className="flex items-center justify-center gap-2 mt-4">
+                          <Coins className="w-4 h-4 text-white/70" />
+                          <span className="text-lg font-bold text-white">₹{metadata.price}</span>
+                        </div>
+                        {selectedUser && (
+                          <div className="text-sm text-white/60">
+                            Balance: ₹{selectedUser.walletBalance.toFixed(2)}
+                          </div>
+                        )}
                       </div>
+                      {!canAfford && selectedUser && (
+                        <div className="absolute inset-0 bg-background/90 backdrop-blur-sm flex items-center justify-center z-20">
+                          <div className="text-center px-4">
+                            <p className="text-base font-medium text-destructive">Insufficient Balance</p>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Available: ₹{selectedUser.walletBalance.toFixed(2)}
+                            </p>
+                            <p className="text-sm text-muted-foreground mt-1">
+                              Required: ₹{metadata.price}
+                            </p>
+                          </div>
+                        </div>
+                      )}
                     </motion.div>
                   );
                 })}
-              </motion.div>
-            )}
-
-            {step === 'user-type' && (
-              <motion.div
-                className="max-w-md mx-auto space-y-6"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-              >
-                <Card className="text-center p-6">
-                  <CardHeader>
-                    <CardTitle>Selected Report: {selectedReport}</CardTitle>
-                    <CardDescription>{selectedReport ? REPORT_METADATA[selectedReport].description : ''}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <Button
-                      className="w-full"
-                      variant="default"
-                      onClick={() => {
-                        if (selectedReport) {
-                          form.setValue("reportType", selectedReport);
-                          setStep('form');
-                        }
-                      }}
-                    >
-                      New User
-                    </Button>
-                    <Button
-                      className="w-full"
-                      variant="outline"
-                      onClick={() => {
-                        fetchExistingUsers();
-                        setStep('existing-user');
-                      }}
-                    >
-                      Existing User
-                    </Button>
-                    <Button
-                      className="w-full"
-                      variant="ghost"
-                      onClick={() => {
-                        setSelectedReport(null);
-                        setStep('select-report');
-                      }}
-                    >
-                      Back to Reports
-                    </Button>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            )}
-
-            {step === 'existing-user' && (
-              <motion.div
-                className="max-w-md mx-auto space-y-6"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-              >
-                <Card className="p-6">
-                  <CardHeader>
-                    <CardTitle>Select Existing User</CardTitle>
-                    <CardDescription>Choose from your saved profiles</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {isLoadingUsers ? (
-                      <div className="flex items-center justify-center py-8">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                      </div>
-                    ) : existingUsers.length > 0 ? (
-                      <div className="space-y-4">
-                        <div className="relative">
-                          <Input
-                            placeholder="Search by name or phone number..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10"
-                          />
-                          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        </div>
-                        <div className="space-y-2 max-h-[400px] overflow-y-auto rounded-md border bg-popover p-1">
-                          {filteredUsers.map((user) => (
-                            <div
-                              key={user.phoneNumber}
-                              className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-3 outline-none hover:bg-accent hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50"
-                              onClick={() => {
-                                fetchUserDetails(user.phoneNumber);
-                                setPreviousStep('existing-user');
-                                setStep('form');
-                              }}
-                            >
-                              <div className="flex items-center gap-3 flex-1 min-w-0">
-                                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                                  <User className="h-4 w-4 text-primary" />
-                                </div>
-                                <div className="flex flex-col overflow-hidden">
-                                  <span className="text-sm font-medium leading-none truncate">{user.name}</span>
-                                  <span className="text-sm text-muted-foreground truncate">{user.phoneNumber}</span>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                          {filteredUsers.length === 0 && (
-                            <div className="text-center py-6 text-sm text-muted-foreground">
-                              No users found
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 text-muted-foreground">
-                        No existing users found
-                      </div>
-                    )}
-                    <div className="pt-4 border-t">
-                      <Button
-                        className="w-full"
-                        variant="ghost"
-                        onClick={() => {
-                          setSearchQuery("");
-                          setStep('user-type');
-                        }}
-                      >
-                        Back
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
               </motion.div>
             )}
 

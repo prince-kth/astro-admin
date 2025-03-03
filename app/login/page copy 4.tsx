@@ -21,8 +21,6 @@ type LoginValues = z.infer<typeof loginSchema>
 
 const VALID_EMAIL = "admin@gmail.com"
 const VALID_PASSWORD = "admin"
-const SUPER_ADMIN_EMAIL = "superadmin@gmail.com"
-const SUPER_ADMIN_PASSWORD = "super"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -40,14 +38,9 @@ export default function LoginPage() {
       await new Promise((resolve) => setTimeout(resolve, 1000))
 
       if (data.email === VALID_EMAIL && data.password === VALID_PASSWORD) {
-        document.cookie = "isAuthenticated=true; path=/; max-age=1800"
+        document.cookie = "isAuthenticated=true; path=/; max-age=86400"
         toast.success("Login successful!")
         router.push("/dashboard")
-      } else if (data.email === SUPER_ADMIN_EMAIL && data.password === SUPER_ADMIN_PASSWORD) {
-        document.cookie = "isAuthenticated=true; path=/; max-age=1800"
-        document.cookie = "isSuperAdmin=true; path=/; max-age=1800"
-        toast.success("Super Admin login successful!")
-        router.push("/superadmin/dashboard")
       } else {
         toast.error("Invalid email or password")
       }

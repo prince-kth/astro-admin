@@ -714,8 +714,6 @@
                          
                         </div>
                     </div>
-                    <p id="chakra-name" style="font-size: 18px; color: #4a6741; margin-top: 15px; text-align: center;"></p>
-
                 </div>
 
                 <script>
@@ -731,9 +729,6 @@
                         const randomIndex = Math.floor(Math.random() * cards.length);
                         // Show the selected card
                         cards[randomIndex].style.display = 'block';
-
-                        document.getElementById('chakra-name').textContent = cards[randomIndex].alt;
-
                     }
                     
                     // Call the function when the page loads
