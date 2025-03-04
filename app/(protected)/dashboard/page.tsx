@@ -1,12 +1,112 @@
 'use client'
 
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Activity, Users, Key, CreditCard, TrendingUp, Clock, AlertTriangle, CheckCircle2 } from "lucide-react"
-import { APIConsumersTable } from "@/components/api-consumers-table"
+import { Users, FileText, Activity } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Progress } from "@/components/ui/progress"
+import { Skeleton } from "@/components/ui/skeleton"
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { format } from "date-fns"
+
+// Types for our dashboard data
+interface DashboardStats {
+  totalUsers: number
+  totalTransactions: number
+  totalReport: number
+}
+
+interface Transaction {
+  id: string
+  userId: number
+  amount: number
+  type: 'credit' | 'debit'
+  status: string
+  timestamp: string
+  description: string
+  user: {
+    name: string
+    email: string
+  }
+}
+
+interface TransactionsResponse {
+  transactions: Transaction[]
+  pagination: {
+    total: number
+    page: number
+    limit: number
+    totalPages: number
+  }
+}
 
 export default function DashboardPage() {
+  const [isLoading, setIsLoading] = useState(true)
+  const [stats, setStats] = useState<DashboardStats>({
+    totalUsers: 0,
+    totalTransactions: 0,
+    totalReport: 0
+  })
+  const [transactions, setTransactions] = useState<Transaction[]>([])
+  const [isLoadingTransactions, setIsLoadingTransactions] = useState(true)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true)
+        setIsLoadingTransactions(true)
+
+        // Fetch dashboard stats
+        const statsResponse = await fetch('/api/dashboard/stats')
+        if (!statsResponse.ok) throw new Error('Failed to fetch dashboard stats')
+        const statsData = await statsResponse.json()
+        setStats(statsData)
+
+        // Fetch recent transactions
+        const transactionsResponse = await fetch('/api/users/transactions?limit=5')
+        if (!transactionsResponse.ok) throw new Error('Failed to fetch transactions')
+        const transactionsData: TransactionsResponse = await transactionsResponse.json()
+        setTransactions(transactionsData.transactions)
+      } catch (error) {
+        console.error('Error fetching data:', error)
+      } finally {
+        setIsLoading(false)
+        setIsLoadingTransactions(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  const StatCard = ({ title, value, icon: Icon, color }: any) => (
+    <Card className="hover:shadow-md transition-all">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+        <Icon className={`h-4 w-4 ${color}`} />
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <Skeleton className="h-8 w-[100px]" />
+        ) : (
+          <div className="text-2xl font-bold" suppressHydrationWarning>{value}</div>
+        )}
+      </CardContent>
+    </Card>
+  )
+
+  const chartData = [
+    { name: "Users", value: stats.totalUsers },
+    { name: "Transactions", value: stats.totalTransactions },
+    { name: "Reports", value: stats.totalReport }
+  ]
+
   return (
     <div className="flex-1 space-y-6 p-8 pt-6">
       <div className="flex items-center justify-between">
@@ -14,147 +114,105 @@ export default function DashboardPage() {
           <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
           <p className="text-muted-foreground">Welcome back, here's what's happening today.</p>
         </div>
-        
       </div>
 
       {/* Quick Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card className="hover:shadow-md transition-all">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-            <Users className="h-4 w-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">45,231</div>
-            <div className="flex items-center space-x-2">
-              <TrendingUp className="h-4 w-4 text-emerald-500" />
-              <p className="text-xs text-emerald-500">+20.1% from last month</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-all">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active API Keys</CardTitle>
-            <Key className="h-4 w-4 text-indigo-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">127</div>
-            <div className="flex items-center space-x-2">
-              <TrendingUp className="h-4 w-4 text-emerald-500" />
-              <p className="text-xs text-emerald-500">+19 since last month</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-all">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">API Calls</CardTitle>
-            <Activity className="h-4 w-4 text-violet-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">2.4M</div>
-            <div className="flex items-center space-x-2">
-              <TrendingUp className="h-4 w-4 text-emerald-500" />
-              <p className="text-xs text-emerald-500">+201K this month</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-md transition-all">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Revenue</CardTitle>
-            <CreditCard className="h-4 w-4 text-purple-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">$45,231.89</div>
-            <div className="flex items-center space-x-2">
-              <TrendingUp className="h-4 w-4 text-emerald-500" />
-              <p className="text-xs text-emerald-500">+20.1% from last month</p>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <StatCard
+          title="Total Users"
+          value={stats.totalUsers.toLocaleString()} suppressHydrationWarning
+          icon={Users}
+          color="text-blue-500"
+        />
+        <StatCard
+          title="Total Transactions"
+          value={stats.totalTransactions.toLocaleString()} suppressHydrationWarning
+          icon={Activity}
+          color="text-violet-500"
+        />
+        <StatCard
+          title="Total Generated Reports"
+          value={stats.totalReport.toLocaleString()} suppressHydrationWarning
+          icon={FileText}
+          color="text-emerald-500"
+        />
       </div>
 
-      {/* System Status */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle>Recent API Consumers</CardTitle>
-                <CardDescription>Overview of recent API usage and performance</CardDescription>
-              </div>
-              <Button variant="outline" size="sm">View All</Button>
+      {/* Chart Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Statistics Overview</CardTitle>
+          <CardDescription>Visual representation of dashboard data</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="h-[300px] w-full flex items-center justify-center">
+              <Skeleton className="h-full w-full" />
             </div>
-          </CardHeader>
-          <CardContent>
-            <APIConsumersTable />
-          </CardContent>
-        </Card>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={chartData}>
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip />
+                <Bar dataKey="value" fill="#4F46E5" />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
 
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle>System Status</CardTitle>
-            <CardDescription>Current system performance metrics</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                    <div className="text-sm font-medium">API Response Time</div>
-                  </div>
-                  <div className="text-sm text-muted-foreground">120ms avg</div>
-                </div>
-                <Progress value={85} className="h-2" />
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Clock className="h-4 w-4 text-blue-500" />
-                    <div className="text-sm font-medium">System Uptime</div>
-                  </div>
-                  <div className="text-sm text-muted-foreground">99.9%</div>
-                </div>
-                <Progress value={99} className="h-2" />
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                    <div className="text-sm font-medium">Error Rate</div>
-                  </div>
-                  <div className="text-sm text-muted-foreground">0.01%</div>
-                </div>
-                <Progress value={2} className="h-2" />
-              </div>
-
-              <div className="mt-6 space-y-2">
-                <h4 className="text-sm font-semibold">Recent System Events</h4>
-                <div className="space-y-2">
-                  {[
-                    { time: '2 mins ago', message: 'New API key generated', status: 'success' },
-                    { time: '15 mins ago', message: 'System update completed', status: 'success' },
-                    { time: '1 hour ago', message: 'Database backup completed', status: 'success' },
-                  ].map((event, i) => (
-                    <div key={i} className="flex items-center space-x-2 text-sm">
-                      <div className={`h-2 w-2 rounded-full ${
-                        event.status === 'success' ? 'bg-emerald-500' : 'bg-yellow-500'
-                      }`} />
-                      <span className="text-muted-foreground">{event.time}</span>
-                      <span>{event.message}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+      {/* Recent Transactions */}
+      <Card className="col-span-4">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Recent Transactions</CardTitle>
+              <CardDescription>Latest financial activities across the platform</CardDescription>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+            <Button variant="outline" size="sm">View All</Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoadingTransactions ? (
+            <div className="space-y-2">
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+              <Skeleton className="h-12 w-full" />
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>User</TableHead>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Date</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {transactions.map((transaction) => (
+                  <TableRow key={transaction.id}>
+                    <TableCell className="font-medium">
+                      <div>
+                        <div className="font-medium">{transaction.user.name}</div>
+                        <div className="text-sm text-muted-foreground">{transaction.user.email}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell className={transaction.type === 'credit' ? 'text-green-600' : 'text-red-600'}>
+                      ₹{transaction.amount.toLocaleString()} 
+                    </TableCell>
+                    <TableCell className="capitalize">{transaction.type}</TableCell>
+                    <TableCell className="max-w-[200px] truncate">{transaction.description}</TableCell>
+                    <TableCell suppressHydrationWarning>{format(new Date(transaction.timestamp), 'MMM d, yyyy h:mm a')}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

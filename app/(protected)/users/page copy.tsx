@@ -150,24 +150,6 @@ interface User {
   };
 }
 
-interface LocationSuggestion {
-  place_id: number;
-  display_name: string;
-  lat: string;
-  lon: string;
-}
-
-function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout;
-  return (...args: Parameters<T>) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-}
-
 // Loading row component for table
 const LoadingRow = () => (
   <TableRow>
@@ -199,14 +181,14 @@ export default function UsersPage() {
     from: undefined,
     to: undefined,
   });
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isAddEditOpen, setIsAddEditOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [deleteUser, setDeleteUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
   const itemsPerPage = 10;
   const indexOfFirstItem = (currentPage - 1) * itemsPerPage;
   const currentItems = users;
@@ -221,19 +203,14 @@ export default function UsersPage() {
     city: "",
     country: "",
     status: "Active" as "Active" | "Blocked",
-    dateOfBirth: new Date().toISOString().split('T')[0],
+    dateOfBirth: "",
     timeOfBirth: "",
     birthPlace: "",
     latitude: 0,
     longitude: 0
   });
 
-  const [birthLocationSuggestions, setBirthLocationSuggestions] = useState<LocationSuggestion[]>([]);
-  const [residenceLocationSuggestions, setResidenceLocationSuggestions] = useState<LocationSuggestion[]>([]);
-  const [isBirthSearching, setIsBirthSearching] = useState(false);
-  const [isResidenceSearching, setResidenceSearching] = useState(false);
-  const [locationError, setLocationError] = useState('');
-  const [isLocating, setIsLocating] = useState(false);
+  const [isAddEditOpen, setIsAddEditOpen] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -243,7 +220,7 @@ export default function UsersPage() {
     try {
       setLoading(true);
       setError(null);
-      const response = await fetch('/api/users');
+      const response = await fetch('/api/users/list');
       const data = await response.json();
       
       if (response.ok) {
@@ -423,7 +400,10 @@ export default function UsersPage() {
               <DropdownMenuItem onClick={() => handleEdit(user)}>
                 <Edit className="mr-2 h-4 w-4" /> Edit
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleViewDetails(user)}>
+              <DropdownMenuItem onClick={() => {
+                setSelectedUser(user);
+                setIsDialogOpen(true);
+              }}>
                 <Eye className="mr-2 h-4 w-4" /> View Details
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -537,7 +517,7 @@ export default function UsersPage() {
 
     try {
       setIsLoading(true)
-      const endpoint = editingUser ? `/api/users/${editingUser.id}` : '/api/users/';
+      const endpoint = editingUser ? `/api/users/${editingUser.id}` : '/api/users/create';
       const method = editingUser ? 'PUT' : 'POST';
       
       const response = await fetch(endpoint, {
@@ -551,19 +531,19 @@ export default function UsersPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || `Failed to ${editingUser ? 'update' : 'create'} user`);
+        throw new Error(data.error || 'Failed to save user');
       }
 
       if (editingUser) {
         setUsers(users.map(user => 
           user.id === editingUser.id 
-            ? { ...user, ...data } as User
+            ? { ...user, ...formData } as User
             : user
         ))
         toast.success("User updated successfully")
       } else {
         setUsers([...users, data as User])
-        toast.success("User created successfully")
+        toast.success("User added successfully")
       }
       
       handleCloseDialog()
@@ -575,35 +555,35 @@ export default function UsersPage() {
     }
   }
 
-  const handleDelete = async () => {
-    if (!deleteUser) return;
+  const handleDelete = async (userId: number) => {
+    const userToDelete = users.find(user => user.id === userId)
+    if (userToDelete) {
+      setDeleteUser(userToDelete)
+      setIsDeleteDialogOpen(true)
+    }
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteUser) return
 
     try {
-      setIsLoading(true);
-      const response = await fetch(`/api/users/${deleteUser.id}`, {
-        method: 'DELETE',
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to delete user');
-      }
-
-      setUsers(users.filter(user => user.id !== deleteUser.id));
-      toast.success("User deleted successfully");
-      setIsDeleteDialogOpen(false);
-      setDeleteUser(null);
+      setIsLoading(true)
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      setUsers(users.filter(user => user.id !== deleteUser.id))
+      toast.success("User deleted successfully")
+      setIsDeleteDialogOpen(false)
+      setDeleteUser(null)
     } catch (error) {
-      console.error('Error deleting user:', error);
-      toast.error(error instanceof Error ? error.message : 'Failed to delete user');
+      toast.error("An error occurred while deleting the user")
     } finally {
-      setIsLoading(false);
+      setIsLoading(false)
     }
   }
 
   const handleEdit = (user: User) => {
-    setEditingUser(user);
+    setSelectedUser(user);
     setFormData({
       name: user.name || "",
       email: user.email || "",
@@ -614,7 +594,7 @@ export default function UsersPage() {
       city: user.city || "",
       country: user.country || "",
       status: user.status || "Active",
-      dateOfBirth: user.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split('T')[0] : "",
+      dateOfBirth: user.dateOfBirth || "",
       timeOfBirth: user.timeOfBirth || "",
       birthPlace: user.birthPlace || "",
       latitude: user.latitude || 0,
@@ -622,11 +602,7 @@ export default function UsersPage() {
     });
     setIsDialogOpen(false);
     setIsAddEditOpen(true);
-  }
-
-  const handleViewDetails = (user: User) => {
-    setSelectedUser(user);
-    setIsDialogOpen(true);
+    setEditingUser(user);
   }
 
   const handleCloseDialog = () => {
@@ -650,8 +626,19 @@ export default function UsersPage() {
     });
   }
 
-  const handleRowClick = (user: User) => {
-    handleViewDetails(user);
+  const refreshData = async () => {
+    try {
+      setIsLoading(true)
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      setUsers([]);
+      fetchUsers();
+      toast.success("Data refreshed")
+    } catch (error) {
+      toast.error("Failed to refresh data")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleExportToExcel = async () => {
@@ -676,7 +663,7 @@ export default function UsersPage() {
         Status: user.status,
         Phone: `${user.countryCode} ${user.phoneNumber}`,
         Location: `${user.city}, ${user.country}`,
-        Balance: `₹${user.walletBalance.toFixed(2)}`,
+        Balance: `$${user.walletBalance.toFixed(2)}`,
         'Created At': formatDate(user.createdAt)
       }));
 
@@ -708,6 +695,10 @@ export default function UsersPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSearch = (value: string) => {
+    setSearchQuery(value);
   };
 
   const handleBulkOperation = async (operation: 'activate' | 'block' | 'upgrade' | 'downgrade' | 'delete', userIds: number[]) => {
@@ -760,162 +751,6 @@ export default function UsersPage() {
     }
   };
 
-  const handleBirthLocationSearch = useCallback(
-    debounce(async (searchTerm: string) => {
-      if (!searchTerm || searchTerm.length < 3) {
-        setBirthLocationSuggestions([]);
-        return;
-      }
-
-      setIsBirthSearching(true);
-      try {
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-            searchTerm
-          )}&limit=5`
-        );
-        const data = await response.json();
-
-        const suggestions: LocationSuggestion[] = data.map((item: any) => ({
-          place_id: item.place_id,
-          display_name: item.display_name,
-          lat: item.lat,
-          lon: item.lon,
-        }));
-
-        setBirthLocationSuggestions(suggestions);
-      } catch (error) {
-        console.error('Error searching for locations:', error);
-        toast.error('Failed to search for locations');
-      } finally {
-        setIsBirthSearching(false);
-      }
-    }, 500),
-    []
-  );
-
-  const handleResidenceLocationSearch = useCallback(
-    debounce(async (searchTerm: string) => {
-      if (!searchTerm || searchTerm.length < 3) {
-        setResidenceLocationSuggestions([]);
-        return;
-      }
-
-      setResidenceSearching(true);
-      try {
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-            searchTerm
-          )}&limit=5`
-        );
-        const data = await response.json();
-
-        const suggestions: LocationSuggestion[] = data.map((item: any) => ({
-          place_id: item.place_id,
-          display_name: item.display_name,
-          lat: item.lat,
-          lon: item.lon,
-        }));
-
-        setResidenceLocationSuggestions(suggestions);
-      } catch (error) {
-        console.error('Error searching for locations:', error);
-        toast.error('Failed to search for locations');
-      } finally {
-        setResidenceSearching(false);
-      }
-    }, 500),
-    []
-  );
-
-  const handleBirthLocationSelect = (suggestion: LocationSuggestion) => {
-    setFormData(prev => ({
-      ...prev,
-      birthPlace: suggestion.display_name,
-      latitude: parseFloat(suggestion.lat),
-      longitude: parseFloat(suggestion.lon)
-    }));
-    setBirthLocationSuggestions([]);
-  };
-
-  const handleResidenceLocationSelect = (suggestion: LocationSuggestion) => {
-    try {
-      const addressParts = suggestion.display_name.split(', ');
-      const city = addressParts[0];
-      const country = addressParts[addressParts.length - 1];
-      
-      setFormData(prev => ({
-        ...prev,
-        city: city,
-        country: country
-      }));
-      setResidenceLocationSuggestions([]);
-    } catch (error) {
-      console.error('Error parsing location:', error);
-      toast.error('Failed to parse location details');
-    }
-  };
-
-  const getCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      setLocationError('Geolocation is not supported by your browser');
-                      return;
-                    }
-
-    setIsLocating(true);
-    setLocationError('');
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-          const { latitude, longitude } = position.coords;
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
-          );
-
-          if (!response.ok) {
-            throw new Error('Failed to get location details');
-          }
-
-          const data = await response.json();
-          const city = data.address.city || data.address.town || data.address.village || '';
-          const state = data.address.state || '';
-          const country = data.address.country || '';
-          const formattedPlace = [city, state, country].filter(Boolean).join(', ');
-
-          setFormData(prev => ({
-            ...prev,
-            birthPlace: formattedPlace,
-            city: city,
-            country: country,
-            latitude: latitude,
-            longitude: longitude
-          }));
-        } catch (error) {
-          console.error('Error getting location details:', error);
-          setLocationError('Could not get location details. Please enter your location manually.');
-        }
-        setIsLocating(false);
-      },
-      (error) => {
-        setIsLocating(false);
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            setLocationError('Location permission denied. Please enter your location manually.');
-            break;
-          case error.POSITION_UNAVAILABLE:
-            setLocationError('Location information unavailable. Please enter your location manually.');
-            break;
-          case error.TIMEOUT:
-            setLocationError('Location request timed out. Please try again or enter manually.');
-            break;
-          default:
-            setLocationError('Error getting location. Please enter your location manually.');
-        }
-      }
-    );
-  };
-
   return (
     <div className="space-y-6">
       <Toaster position="top-right" expand={false} richColors closeButton />
@@ -932,7 +767,7 @@ export default function UsersPage() {
             <Input
               placeholder="Search users..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearch(e.target.value)}
               className="pl-10 bg-white border-blue-100 focus:border-blue-500"
             />
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -1064,13 +899,13 @@ export default function UsersPage() {
             ))}
           </TableHeader>
           <TableBody>
-            {loading ? (
-              <>
-                {[...Array(5)].map((_, index) => (
-                  <LoadingRow key={`loading-${index}`} />
-                ))}
-              </>
-            ) : error ? (
+          {loading ? (
+    <>
+      {[...Array(5)].map((_, index) => (
+        <LoadingRow key={`loading-${index}`} />
+      ))}
+    </>
+  ) : error ? (
               <TableRow>
                 <TableCell
                   colSpan={columns.length}
@@ -1085,30 +920,44 @@ export default function UsersPage() {
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
                   className="cursor-pointer hover:bg-gray-50"
-                  onClick={(e) => {
-                    // Prevent row click if clicking on checkbox or actions
-                    if (
-                      (e.target as HTMLElement).closest('.checkbox-cell') ||
-                      (e.target as HTMLElement).closest('.actions-cell')
-                    ) {
-                      return;
-                    }
-                    handleRowClick(row.original);
+                  onClick={() => {
+                    setSelectedUser(row.original);
+                    setIsDialogOpen(true);
+                    setFormData({
+                      name: row.original.name,
+                      email: row.original.email,
+                      phoneNumber: row.original.phoneNumber,
+                      countryCode: row.original.countryCode || '+91',
+                      package: row.original.package,
+                      walletBalance: row.original.walletBalance,
+                      city: row.original.city,
+                      country: row.original.country,
+                      status: row.original.status,
+                      dateOfBirth: row.original.dateOfBirth,
+                      timeOfBirth: row.original.timeOfBirth,
+                      birthPlace: row.original.birthPlace,
+                      latitude: row.original.latitude,
+                      longitude: row.original.longitude
+                    });
                   }}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell 
                       key={cell.id}
-                      className={cn(
-                        "py-3 px-4",
-                        cell.column.id === "select" && "checkbox-cell",
-                        cell.column.id === "actions" && "actions-cell"
-                      )}
+                      className="py-3 px-4"
                     >
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext()
-                      )}
+                      <div className={cn(
+                        "flex items-center",
+                        cell.column.id === "srNo" && "justify-center",
+                        cell.column.id === "select" && "justify-center",
+                        cell.column.id === "status" && "justify-start",
+                        cell.column.id === "actions" && "justify-end"
+                      )}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </div>
                     </TableCell>
                   ))}
                 </TableRow>
@@ -1120,6 +969,13 @@ export default function UsersPage() {
                   className="h-24 text-center text-gray-500"
                 >
                   No results found.
+                </TableCell>
+              </TableRow>
+            )}
+            {loading && (
+              <TableRow>
+                <TableCell colSpan={columns.length}>
+                  <LoadingRow />
                 </TableCell>
               </TableRow>
             )}
@@ -1208,6 +1064,7 @@ export default function UsersPage() {
         <DialogContent className="flex flex-col gap-0 p-0 sm:max-h-[min(640px,80vh)] sm:max-w-lg [&>button:last-child]:top-3.5">
           <DialogHeader className="contents space-y-0 text-left">
             <DialogTitle className="border-b px-6 py-4 text-base flex items-center gap-2 text-red-600">
+              {/* <AlertTriangle className="h-5 w-5" /> */}
               Confirm Deletion
             </DialogTitle>
             <div className="overflow-y-auto">
@@ -1227,7 +1084,7 @@ export default function UsersPage() {
                 </Button>
                 <Button
                   variant="destructive"
-                  onClick={handleDelete}
+                  onClick={confirmDelete}
                   disabled={isLoading}
                   className="gap-2"
                 >
@@ -1338,7 +1195,7 @@ export default function UsersPage() {
                   variant="outline"
                   onClick={() => {
                     setIsDialogOpen(false);
-                    handleEdit(selectedUser);
+                    setIsAddEditOpen(true);
                   }}
                 >
                   <Pencil className="h-4 w-4 mr-2" />
@@ -1348,7 +1205,8 @@ export default function UsersPage() {
                   <Button 
                     variant="destructive"
                     onClick={() => {
-                      handleBulkOperation('block', [selectedUser.id]);
+                      // Handle block user
+                      toast.error('User blocked successfully');
                       setIsDialogOpen(false);
                     }}
                   >
@@ -1446,138 +1304,51 @@ export default function UsersPage() {
                       onChange={(e) => setFormData({ ...formData, timeOfBirth: e.target.value })}
                     />
                   </div>
-                  <div className="space-y-4 border rounded-lg p-4 bg-muted/10">
-                    <h3 className="font-medium">Birth Location Details</h3>
+                  <div className="space-y-2">
+                    <Label>Birth Place</Label>
+                    <Input
+                      placeholder="Enter birth place"
+                      value={formData.birthPlace}
+                      onChange={(e) => setFormData({ ...formData, birthPlace: e.target.value })}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Birth Place</Label>
-                      <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <Input
-                            placeholder="Search for birth place..."
-                            value={formData.birthPlace}
-                            onChange={(e) => {
-                              setFormData({ ...formData, birthPlace: e.target.value });
-                              handleBirthLocationSearch(e.target.value);
-                            }}
-                          />
-                          {isBirthSearching && (
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                            </div>
-                          )}
-                          {birthLocationSuggestions.length > 0 && (
-                            <div className="absolute z-10 mt-1 w-full rounded-md border bg-popover p-2 shadow-md">
-                              {birthLocationSuggestions.map((suggestion) => (
-                                <button
-                                  key={suggestion.place_id}
-                                  className="w-full rounded px-2 py-1 text-left hover:bg-accent hover:text-accent-foreground"
-                                  onClick={() => handleBirthLocationSelect(suggestion)}
-                                  type="button"
-                                >
-                                  {suggestion.display_name}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={getCurrentLocation}
-                          disabled={isLocating}
-                        >
-                          {isLocating ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          ) : (
-                            '📍'
-                          )}
-                          {isLocating ? 'Locating...' : 'Current'}
-                        </Button>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>Latitude</Label>
-                          <Input
-                            type="number"
-                            step="any"
-                            placeholder="Enter latitude"
-                            value={formData.latitude}
-                            onChange={(e) => setFormData({ ...formData, latitude: parseFloat(e.target.value) || 0 })}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Longitude</Label>
-                          <Input
-                            type="number"
-                            step="any"
-                            placeholder="Enter longitude"
-                            value={formData.longitude}
-                            onChange={(e) => setFormData({ ...formData, longitude: parseFloat(e.target.value) || 0 })}
-                          />
-                        </div>
-                      </div>
+                      <Label>Latitude</Label>
+                      <Input
+                        type="number"
+                        step="any"
+                        placeholder="Enter latitude"
+                        value={formData.latitude}
+                        onChange={(e) => setFormData({ ...formData, latitude: parseFloat(e.target.value) || 0 })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Longitude</Label>
+                      <Input
+                        type="number"
+                        step="any"
+                        placeholder="Enter longitude"
+                        value={formData.longitude}
+                        onChange={(e) => setFormData({ ...formData, longitude: parseFloat(e.target.value) || 0 })}
+                      />
                     </div>
                   </div>
-                  <div className="space-y-4 border rounded-lg p-4 bg-muted/10">
-                    <h3 className="font-medium">Current Residence</h3>
-                    <div className="space-y-2">
-                      <Label>Location</Label>
-                      <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <Input
-                            placeholder="Search for current location..."
-                            value={formData.city}
-                            onChange={(e) => {
-                              setFormData({ ...formData, city: e.target.value });
-                              handleResidenceLocationSearch(e.target.value);
-                            }}
-                          />
-                          {isResidenceSearching && (
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                            </div>
-                          )}
-                          {residenceLocationSuggestions.length > 0 && (
-                            <div className="absolute z-10 mt-1 w-full rounded-md border bg-popover p-2 shadow-md">
-                              {residenceLocationSuggestions.map((suggestion) => (
-                                <button
-                                  key={suggestion.place_id}
-                                  className="w-full rounded px-2 py-1 text-left hover:bg-accent hover:text-accent-foreground"
-                                  onClick={() => handleResidenceLocationSelect(suggestion)}
-                                  type="button"
-                                >
-                                  {suggestion.display_name}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={getCurrentLocation}
-                          disabled={isLocating}
-                        >
-                          {isLocating ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          ) : (
-                            '📍'
-                          )}
-                          {isLocating ? 'Locating...' : 'Current'}
-                        </Button>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Country</Label>
-                        <Input
-                          placeholder="Country will be set automatically"
-                          value={formData.country}
-                          className="bg-muted"
-                          readOnly
-                        />
-                      </div>
-                    </div>
+                  <div className="space-y-2">
+                    <Label>City</Label>
+                    <Input
+                      placeholder="Enter city"
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Country</Label>
+                    <Input
+                      placeholder="Enter country"
+                      value={formData.country}
+                      onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Status</Label>
@@ -1611,7 +1382,109 @@ export default function UsersPage() {
         </DialogContent>
       </Dialog>
 
+      {/* User Details Drawer */}
+      <Sheet open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+        <SheetContent className="sm:max-w-xl">
+          <SheetHeader>
+            <SheetTitle className="text-2xl font-bold">User Details</SheetTitle>
+          </SheetHeader>
+          {selectedUser && (
+            <div className="mt-6 space-y-6">
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Basic Information</h3>
+                  <div className="mt-2 grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Name</Label>
+                      <div className="mt-1 text-sm">{selectedUser.name}</div>
+                    </div>
+                    <div>
+                      <Label>Email</Label>
+                      <div className="mt-1 text-sm">{selectedUser.email}</div>
+                    </div>
+                    <div>
+                      <Label>Package</Label>
+                      <div className="mt-1">
+                        <Badge 
+                          variant={selectedUser.package === "Premium" ? "default" : "secondary"}
+                          className={selectedUser.package === "Premium" 
+                            ? "bg-purple-100 text-purple-700" 
+                            : "bg-blue-100 text-blue-700"}
+                        >
+                          {selectedUser.package}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div>
+                      <Label>Status</Label>
+                      <div className="mt-1">
+                        <Badge 
+                          variant={selectedUser.status === "Active" ? "default" : "destructive"}
+                        >
+                          {selectedUser.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Contact Information</h3>
+                  <div className="mt-2 grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Phone Number</Label>
+                      <div className="mt-1 text-sm">{selectedUser.countryCode} {selectedUser.phoneNumber}</div>
+                    </div>
+                    <div>
+                      <Label>City</Label>
+                      <div className="mt-1 text-sm">{selectedUser.city}</div>
+                    </div>
+                    <div>
+                      <Label>Country</Label>
+                      <div className="mt-1 text-sm">{selectedUser.country}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Financial Information</h3>
+                  <div className="mt-2 grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Wallet Balance</Label>
+                      <div className="mt-1 text-sm">${selectedUser.walletBalance.toFixed(2)}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-sm font-medium text-gray-500">Account Information</h3>
+                  <div className="mt-2 grid grid-cols-2 gap-4">
+                    <div>
+                      <Label>Serial Number</Label>
+                      <div className="mt-1 text-sm">{indexOfFirstItem + currentItems.indexOf(selectedUser) + 1}</div>
+                    </div>
+                    <div>
+                      <Label>Created At</Label>
+                      <div className="mt-1 text-sm">{formatDate(selectedUser.createdAt)}</div>
+                    </div>
+                    <div>
+                      <Label>User ID</Label>
+                      <div className="mt-1 text-sm">{selectedUser.id}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <SheetFooter>
+                <div className="flex gap-4">
+                  <Button variant="outline" onClick={() => setIsDrawerOpen(false)}>Close</Button>
+                  <Button onClick={() => handleEdit(selectedUser)}>Edit User</Button>
+                </div>
+              </SheetFooter>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }

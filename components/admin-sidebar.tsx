@@ -1,6 +1,6 @@
 'use client';
 
-import { Home, Users, Key, Settings, ChevronRight, Rocket, LogOut, Star, Menu, Wallet } from "lucide-react"
+import { Home, Users, Key, Settings, ChevronRight, Rocket, LogOut, Star, Menu, Wallet, History } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
@@ -173,6 +173,22 @@ export function AdminSidebar() {
                 <Link href="/kundli" className="flex items-center gap-3 w-full">
                   <Star className="h-[18px] w-[18px] stroke-[1.5]" />
                   <span className="font-medium">Report Generation</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+
+        
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                asChild
+                className={cn(
+                  "w-full flex items-center gap-3 px-6 py-2.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50/80 transition-all duration-200",
+                  getActiveStyles(isActiveLink('/report-history'))
+                )}
+              >
+                <Link href="/report-history" className="flex items-center gap-3 w-full">
+                  <History className="h-[18px] w-[18px] stroke-[1.5]" />
+                  <span className="font-medium">Report History</span>
                 </Link>
               </SidebarMenuButton>
             </SidebarMenuItem>

@@ -30,6 +30,7 @@ model User {
   updatedAt     DateTime      @updatedAt
   transactions  Transaction[]
   reports       Report[]
+  reportHistory ReportHistory[]
 }
 
 model Transaction {
@@ -52,6 +53,19 @@ model Report {
   status      ReportStatus
   pdfUrl      String?
   cost        Float
+}
+
+model ReportHistory {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  reportType  String
+  reportName  String
+  amount      Float
+  status      String   @default("completed")
+  generatedAt DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
 }
 
 enum PackageType {

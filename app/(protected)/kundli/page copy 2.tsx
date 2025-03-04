@@ -205,7 +205,7 @@ export default function Home() {
           city: user.city,
           country: user.country,
           status: user.status,
-          dateOfBirth: user.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split('T')[0] : "",
+          dateOfBirth: user.dateOfBirth,
           timeOfBirth: user.timeOfBirth,
           birthPlace: user.birthPlace,
           latitude: user.latitude,

@@ -150,24 +150,6 @@ interface User {
   };
 }
 
-interface LocationSuggestion {
-  place_id: number;
-  display_name: string;
-  lat: string;
-  lon: string;
-}
-
-function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout;
-  return (...args: Parameters<T>) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-}
-
 // Loading row component for table
 const LoadingRow = () => (
   <TableRow>
@@ -227,13 +209,6 @@ export default function UsersPage() {
     latitude: 0,
     longitude: 0
   });
-
-  const [birthLocationSuggestions, setBirthLocationSuggestions] = useState<LocationSuggestion[]>([]);
-  const [residenceLocationSuggestions, setResidenceLocationSuggestions] = useState<LocationSuggestion[]>([]);
-  const [isBirthSearching, setIsBirthSearching] = useState(false);
-  const [isResidenceSearching, setResidenceSearching] = useState(false);
-  const [locationError, setLocationError] = useState('');
-  const [isLocating, setIsLocating] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -758,162 +733,6 @@ export default function UsersPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleBirthLocationSearch = useCallback(
-    debounce(async (searchTerm: string) => {
-      if (!searchTerm || searchTerm.length < 3) {
-        setBirthLocationSuggestions([]);
-        return;
-      }
-
-      setIsBirthSearching(true);
-      try {
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-            searchTerm
-          )}&limit=5`
-        );
-        const data = await response.json();
-
-        const suggestions: LocationSuggestion[] = data.map((item: any) => ({
-          place_id: item.place_id,
-          display_name: item.display_name,
-          lat: item.lat,
-          lon: item.lon,
-        }));
-
-        setBirthLocationSuggestions(suggestions);
-      } catch (error) {
-        console.error('Error searching for locations:', error);
-        toast.error('Failed to search for locations');
-      } finally {
-        setIsBirthSearching(false);
-      }
-    }, 500),
-    []
-  );
-
-  const handleResidenceLocationSearch = useCallback(
-    debounce(async (searchTerm: string) => {
-      if (!searchTerm || searchTerm.length < 3) {
-        setResidenceLocationSuggestions([]);
-        return;
-      }
-
-      setResidenceSearching(true);
-      try {
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-            searchTerm
-          )}&limit=5`
-        );
-        const data = await response.json();
-
-        const suggestions: LocationSuggestion[] = data.map((item: any) => ({
-          place_id: item.place_id,
-          display_name: item.display_name,
-          lat: item.lat,
-          lon: item.lon,
-        }));
-
-        setResidenceLocationSuggestions(suggestions);
-      } catch (error) {
-        console.error('Error searching for locations:', error);
-        toast.error('Failed to search for locations');
-      } finally {
-        setResidenceSearching(false);
-      }
-    }, 500),
-    []
-  );
-
-  const handleBirthLocationSelect = (suggestion: LocationSuggestion) => {
-    setFormData(prev => ({
-      ...prev,
-      birthPlace: suggestion.display_name,
-      latitude: parseFloat(suggestion.lat),
-      longitude: parseFloat(suggestion.lon)
-    }));
-    setBirthLocationSuggestions([]);
-  };
-
-  const handleResidenceLocationSelect = (suggestion: LocationSuggestion) => {
-    try {
-      const addressParts = suggestion.display_name.split(', ');
-      const city = addressParts[0];
-      const country = addressParts[addressParts.length - 1];
-      
-      setFormData(prev => ({
-        ...prev,
-        city: city,
-        country: country
-      }));
-      setResidenceLocationSuggestions([]);
-    } catch (error) {
-      console.error('Error parsing location:', error);
-      toast.error('Failed to parse location details');
-    }
-  };
-
-  const getCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      setLocationError('Geolocation is not supported by your browser');
-                      return;
-                    }
-
-    setIsLocating(true);
-    setLocationError('');
-
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        try {
-          const { latitude, longitude } = position.coords;
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
-          );
-
-          if (!response.ok) {
-            throw new Error('Failed to get location details');
-          }
-
-          const data = await response.json();
-          const city = data.address.city || data.address.town || data.address.village || '';
-          const state = data.address.state || '';
-          const country = data.address.country || '';
-          const formattedPlace = [city, state, country].filter(Boolean).join(', ');
-
-          setFormData(prev => ({
-            ...prev,
-            birthPlace: formattedPlace,
-            city: city,
-            country: country,
-            latitude: latitude,
-            longitude: longitude
-          }));
-        } catch (error) {
-          console.error('Error getting location details:', error);
-          setLocationError('Could not get location details. Please enter your location manually.');
-        }
-        setIsLocating(false);
-      },
-      (error) => {
-        setIsLocating(false);
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            setLocationError('Location permission denied. Please enter your location manually.');
-            break;
-          case error.POSITION_UNAVAILABLE:
-            setLocationError('Location information unavailable. Please enter your location manually.');
-            break;
-          case error.TIMEOUT:
-            setLocationError('Location request timed out. Please try again or enter manually.');
-            break;
-          default:
-            setLocationError('Error getting location. Please enter your location manually.');
-        }
-      }
-    );
   };
 
   return (
@@ -1446,138 +1265,51 @@ export default function UsersPage() {
                       onChange={(e) => setFormData({ ...formData, timeOfBirth: e.target.value })}
                     />
                   </div>
-                  <div className="space-y-4 border rounded-lg p-4 bg-muted/10">
-                    <h3 className="font-medium">Birth Location Details</h3>
+                  <div className="space-y-2">
+                    <Label>Birth Place</Label>
+                    <Input
+                      placeholder="Enter birth place"
+                      value={formData.birthPlace}
+                      onChange={(e) => setFormData({ ...formData, birthPlace: e.target.value })}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Birth Place</Label>
-                      <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <Input
-                            placeholder="Search for birth place..."
-                            value={formData.birthPlace}
-                            onChange={(e) => {
-                              setFormData({ ...formData, birthPlace: e.target.value });
-                              handleBirthLocationSearch(e.target.value);
-                            }}
-                          />
-                          {isBirthSearching && (
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                            </div>
-                          )}
-                          {birthLocationSuggestions.length > 0 && (
-                            <div className="absolute z-10 mt-1 w-full rounded-md border bg-popover p-2 shadow-md">
-                              {birthLocationSuggestions.map((suggestion) => (
-                                <button
-                                  key={suggestion.place_id}
-                                  className="w-full rounded px-2 py-1 text-left hover:bg-accent hover:text-accent-foreground"
-                                  onClick={() => handleBirthLocationSelect(suggestion)}
-                                  type="button"
-                                >
-                                  {suggestion.display_name}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={getCurrentLocation}
-                          disabled={isLocating}
-                        >
-                          {isLocating ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          ) : (
-                            '📍'
-                          )}
-                          {isLocating ? 'Locating...' : 'Current'}
-                        </Button>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>Latitude</Label>
-                          <Input
-                            type="number"
-                            step="any"
-                            placeholder="Enter latitude"
-                            value={formData.latitude}
-                            onChange={(e) => setFormData({ ...formData, latitude: parseFloat(e.target.value) || 0 })}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label>Longitude</Label>
-                          <Input
-                            type="number"
-                            step="any"
-                            placeholder="Enter longitude"
-                            value={formData.longitude}
-                            onChange={(e) => setFormData({ ...formData, longitude: parseFloat(e.target.value) || 0 })}
-                          />
-                        </div>
-                      </div>
+                      <Label>Latitude</Label>
+                      <Input
+                        type="number"
+                        step="any"
+                        placeholder="Enter latitude"
+                        value={formData.latitude}
+                        onChange={(e) => setFormData({ ...formData, latitude: parseFloat(e.target.value) || 0 })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Longitude</Label>
+                      <Input
+                        type="number"
+                        step="any"
+                        placeholder="Enter longitude"
+                        value={formData.longitude}
+                        onChange={(e) => setFormData({ ...formData, longitude: parseFloat(e.target.value) || 0 })}
+                      />
                     </div>
                   </div>
-                  <div className="space-y-4 border rounded-lg p-4 bg-muted/10">
-                    <h3 className="font-medium">Current Residence</h3>
-                    <div className="space-y-2">
-                      <Label>Location</Label>
-                      <div className="flex gap-2">
-                        <div className="relative flex-1">
-                          <Input
-                            placeholder="Search for current location..."
-                            value={formData.city}
-                            onChange={(e) => {
-                              setFormData({ ...formData, city: e.target.value });
-                              handleResidenceLocationSearch(e.target.value);
-                            }}
-                          />
-                          {isResidenceSearching && (
-                            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                            </div>
-                          )}
-                          {residenceLocationSuggestions.length > 0 && (
-                            <div className="absolute z-10 mt-1 w-full rounded-md border bg-popover p-2 shadow-md">
-                              {residenceLocationSuggestions.map((suggestion) => (
-                                <button
-                                  key={suggestion.place_id}
-                                  className="w-full rounded px-2 py-1 text-left hover:bg-accent hover:text-accent-foreground"
-                                  onClick={() => handleResidenceLocationSelect(suggestion)}
-                                  type="button"
-                                >
-                                  {suggestion.display_name}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          onClick={getCurrentLocation}
-                          disabled={isLocating}
-                        >
-                          {isLocating ? (
-                            <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                          ) : (
-                            '📍'
-                          )}
-                          {isLocating ? 'Locating...' : 'Current'}
-                        </Button>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label>Country</Label>
-                        <Input
-                          placeholder="Country will be set automatically"
-                          value={formData.country}
-                          className="bg-muted"
-                          readOnly
-                        />
-                      </div>
-                    </div>
+                  <div className="space-y-2">
+                    <Label>City</Label>
+                    <Input
+                      placeholder="Enter city"
+                      value={formData.city}
+                      onChange={(e) => setFormData({ ...formData, city: e.target.value })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Country</Label>
+                    <Input
+                      placeholder="Enter country"
+                      value={formData.country}
+                      onChange={(e) => setFormData({ ...formData, country: e.target.value })}
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Status</Label>
